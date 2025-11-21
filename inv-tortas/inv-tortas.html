@@ -4,17 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Tortas</title>
-    <!-- Tailwind CSS para estilos modernos y rápidos -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <style>
-        /* Animaciones suaves */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Estilo para ocultar scrollbar pero permitir scroll */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -23,7 +17,7 @@
 
     <!-- Header Sticky -->
     <header class="bg-pink-600 text-white p-4 shadow-lg sticky top-0 z-20">
-        <div class="max-w-3xl mx-auto flex justify-between items-center">
+        <div class="max-w-3xl mx-auto flex justify-between items-center mb-4">
             <div class="flex items-center gap-2">
                 <i data-lucide="cake" class="h-6 w-6"></i>
                 <h1 class="text-xl font-bold">Control de Tortas</h1>
@@ -32,36 +26,64 @@
                 <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Resetear
             </button>
         </div>
+        
+        <!-- Navegación (Tabs) -->
+        <div class="max-w-3xl mx-auto flex bg-pink-700/50 p-1 rounded-xl">
+            <button onclick="app.switchView('inventory')" id="tab-inventory" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 bg-white text-pink-600 shadow-sm">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i> Inventario
+            </button>
+            <button onclick="app.switchView('history')" id="tab-history" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 text-pink-100 hover:bg-pink-600/50">
+                <i data-lucide="history" class="w-4 h-4"></i> Historial
+            </button>
+        </div>
     </header>
 
     <main class="max-w-3xl mx-auto p-4 space-y-6">
         
-        <!-- Dashboard de Resumen -->
-        <div id="dashboard" class="grid grid-cols-3 gap-2 mb-6">
-            <!-- Se llena dinámicamente -->
+        <!-- VISTA: INVENTARIO -->
+        <div id="view-inventory" class="space-y-6 fade-in">
+            <!-- Dashboard -->
+            <div id="dashboard" class="grid grid-cols-3 gap-2">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Lista de Productos -->
+            <div id="inventory-list" class="space-y-6">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <!-- Botón Agregar -->
+            <button onclick="app.openAddModal()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:text-pink-500 hover:border-pink-300 hover:bg-pink-50 transition-all flex items-center justify-center gap-2 font-bold">
+                <i data-lucide="plus-circle" class="w-6 h-6"></i>
+                Agregar Nuevo Tipo de Torta
+            </button>
         </div>
 
-        <!-- Lista de Productos -->
-        <div id="inventory-list" class="space-y-6">
-            <!-- Se llena dinámicamente -->
+        <!-- VISTA: HISTORIAL -->
+        <div id="view-history" class="hidden space-y-4 fade-in">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-700">Últimos Movimientos</h2>
+                <span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full font-medium" id="history-count">0 registros</span>
+            </div>
+            
+            <div id="history-list" class="space-y-3">
+                <!-- Se llena dinámicamente -->
+            </div>
+            
+            <div id="empty-history" class="hidden flex-col items-center justify-center py-12 text-slate-400">
+                <i data-lucide="clipboard-x" class="w-12 h-12 mb-2 opacity-50"></i>
+                <p class="text-sm">No hay movimientos aún</p>
+            </div>
         </div>
-
-        <!-- Botón Agregar Nuevo Producto -->
-        <button onclick="app.openAddModal()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 hover:text-pink-500 hover:border-pink-300 hover:bg-pink-50 transition-all flex items-center justify-center gap-2 font-bold">
-            <i data-lucide="plus-circle" class="w-6 h-6"></i>
-            Agregar Nuevo Tipo de Torta
-        </button>
 
     </main>
 
-    <!-- Modal Agregar Nueva Torta -->
+    <!-- Modales (Iguales que antes) -->
     <div id="modal-add" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-sm shadow-2xl fade-in">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-800">Nuevo Producto</h3>
-                <button onclick="app.closeAddModal()" class="text-slate-400 hover:text-slate-600">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+                <button onclick="app.closeAddModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -76,18 +98,15 @@
                         <button onclick="app.adjustNewStock(1)" class="p-2 bg-slate-100 rounded-lg hover:bg-slate-200">+</button>
                     </div>
                 </div>
-                <button onclick="app.addNewProduct()" class="w-full py-3 bg-pink-600 text-white rounded-xl font-bold shadow-lg shadow-pink-200 hover:bg-pink-700 active:scale-95 transition-all">
-                    Guardar Torta
-                </button>
+                <button onclick="app.addNewProduct()" class="w-full py-3 bg-pink-600 text-white rounded-xl font-bold shadow-lg shadow-pink-200 hover:bg-pink-700 active:scale-95 transition-all">Guardar Torta</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Confirmar Reset -->
     <div id="modal-reset" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl p-6 max-w-xs w-full shadow-2xl fade-in">
             <h3 class="text-lg font-bold text-slate-800 mb-2">¿Reiniciar todo?</h3>
-            <p class="text-slate-600 mb-4 text-sm">Se borrarán todas las ventas, deudas y productos nuevos.</p>
+            <p class="text-slate-600 mb-4 text-sm">Se borrará todo el inventario y el historial.</p>
             <div class="flex gap-3">
                 <button onclick="app.closeResetModal()" class="flex-1 py-2 px-4 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium">Cancelar</button>
                 <button onclick="app.resetData()" class="flex-1 py-2 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium">Sí, borrar</button>
@@ -96,42 +115,37 @@
     </div>
 
     <script>
-        // --- Lógica de la Aplicación ---
         const app = {
-            data: [],
-            initialData: [
-                {
-                    id: 1,
-                    name: 'Chocolate',
-                    totalStock: 6,
-                    reservations: [{ id: 'res-init-1', customerName: 'Eismel', date: new Date().toISOString() }],
-                    credits: [],
-                    imageColor: 'bg-amber-800'
-                },
-                {
-                    id: 2,
-                    name: 'Torta Quesillo',
-                    totalStock: 3,
-                    reservations: [],
-                    credits: [],
-                    imageColor: 'bg-yellow-400'
-                },
-                {
-                    id: 3,
-                    name: 'Marquesa',
-                    totalStock: 2,
-                    reservations: [],
-                    credits: [],
-                    imageColor: 'bg-orange-200'
-                }
-            ],
+            // Estado de la vista
+            currentView: 'inventory',
+            
+            // Datos
+            data: {
+                inventory: [],
+                history: [] // Nuevo array para historial
+            },
 
-            // Inicialización
+            initialData: {
+                inventory: [
+                    { id: 1, name: 'Chocolate', totalStock: 6, reservations: [{ id: 'res-init-1', customerName: 'Eismel', date: new Date().toISOString() }], credits: [], imageColor: 'bg-amber-800' },
+                    { id: 2, name: 'Torta Quesillo', totalStock: 3, reservations: [], credits: [], imageColor: 'bg-yellow-400' },
+                    { id: 3, name: 'Marquesa', totalStock: 2, reservations: [], credits: [], imageColor: 'bg-orange-200' }
+                ],
+                history: []
+            },
+
             init() {
-                const saved = localStorage.getItem('cake_inventory_html_v1');
+                const saved = localStorage.getItem('cake_inventory_history_v1');
                 if (saved) {
                     try {
-                        this.data = JSON.parse(saved);
+                        const parsed = JSON.parse(saved);
+                        // Migración simple si viene de versión anterior que era un array directo
+                        if (Array.isArray(parsed)) {
+                            this.data.inventory = parsed;
+                            this.data.history = [];
+                        } else {
+                            this.data = parsed;
+                        }
                     } catch (e) {
                         this.data = JSON.parse(JSON.stringify(this.initialData));
                     }
@@ -142,17 +156,32 @@
             },
 
             save() {
-                localStorage.setItem('cake_inventory_html_v1', JSON.stringify(this.data));
+                localStorage.setItem('cake_inventory_history_v1', JSON.stringify(this.data));
                 this.render();
             },
 
-            // --- Acciones de Negocio ---
+            // --- Helper de Historial ---
+            addToHistory(type, cakeName, clientName, amount = 1) {
+                this.data.history.unshift({
+                    id: Date.now(),
+                    date: new Date().toISOString(),
+                    type: type, // 'sale', 'credit', 'reservation_done', 'paid'
+                    cakeName: cakeName,
+                    clientName: clientName || '-',
+                    amount: amount
+                });
+                // Limitar historial a 50 items para no saturar memoria
+                if (this.data.history.length > 50) this.data.history.pop();
+            },
+
+            // --- Lógica de Negocio ---
 
             directSale(id) {
-                const cake = this.data.find(c => c.id === id);
+                const cake = this.data.inventory.find(c => c.id === id);
                 const available = cake.totalStock - cake.reservations.length;
                 if (available > 0) {
                     cake.totalStock--;
+                    this.addToHistory('sale', cake.name, 'Venta de Mostrador');
                     this.save();
                 }
             },
@@ -161,17 +190,11 @@
                 const input = document.getElementById(`input-${id}`);
                 const name = input.value.trim();
                 if (!name) return alert("Por favor escribe un nombre");
-
-                const cake = this.data.find(c => c.id === id);
+                const cake = this.data.inventory.find(c => c.id === id);
                 const available = cake.totalStock - cake.reservations.length;
-
                 if (available > 0) {
-                    cake.reservations.push({
-                        id: Date.now().toString(),
-                        customerName: name,
-                        date: new Date().toISOString()
-                    });
-                    input.value = ''; // Limpiar input
+                    cake.reservations.push({ id: Date.now().toString(), customerName: name, date: new Date().toISOString() });
+                    input.value = ''; 
                     this.save();
                 }
             },
@@ -180,112 +203,174 @@
                 const input = document.getElementById(`input-${id}`);
                 const name = input.value.trim();
                 if (!name) return alert("Por favor escribe un nombre para el fiado");
-
-                const cake = this.data.find(c => c.id === id);
+                const cake = this.data.inventory.find(c => c.id === id);
                 const available = cake.totalStock - cake.reservations.length;
-
                 if (available > 0) {
-                    cake.totalStock--; // Descuenta stock físico
+                    cake.totalStock--;
                     if (!cake.credits) cake.credits = [];
-                    cake.credits.push({
-                        id: Date.now().toString(),
-                        customerName: name,
-                        date: new Date().toISOString()
-                    });
+                    const creditId = Date.now().toString();
+                    cake.credits.push({ id: creditId, customerName: name, date: new Date().toISOString() });
                     input.value = '';
+                    this.addToHistory('credit', cake.name, name);
                     this.save();
                 }
             },
 
             completeReservation(cakeId, resId) {
-                const cake = this.data.find(c => c.id === cakeId);
-                cake.totalStock--;
-                cake.reservations = cake.reservations.filter(r => r.id !== resId);
-                this.save();
-            },
-
-            cancelReservation(cakeId, resId) {
-                const cake = this.data.find(c => c.id === cakeId);
-                cake.reservations = cake.reservations.filter(r => r.id !== resId);
-                this.save();
+                const cake = this.data.inventory.find(c => c.id === cakeId);
+                const res = cake.reservations.find(r => r.id === resId);
+                if (res) {
+                    cake.totalStock--;
+                    cake.reservations = cake.reservations.filter(r => r.id !== resId);
+                    this.addToHistory('reservation_done', cake.name, res.customerName);
+                    this.save();
+                }
             },
 
             settleCredit(cakeId, creditId) {
-                const cake = this.data.find(c => c.id === cakeId);
-                cake.credits = cake.credits.filter(c => c.id !== creditId);
+                const cake = this.data.inventory.find(c => c.id === cakeId);
+                const credit = cake.credits.find(c => c.id === creditId);
+                if (credit) {
+                    cake.credits = cake.credits.filter(c => c.id !== creditId);
+                    this.addToHistory('paid', cake.name, credit.customerName);
+                    this.save();
+                }
+            },
+
+            cancelReservation(cakeId, resId) {
+                const cake = this.data.inventory.find(c => c.id === cakeId);
+                cake.reservations = cake.reservations.filter(r => r.id !== resId);
                 this.save();
             },
 
             addStock(id) {
-                const cake = this.data.find(c => c.id === id);
+                const cake = this.data.inventory.find(c => c.id === id);
                 cake.totalStock++;
+                // Opcional: ¿Quieres registrar cuando agregas stock? Por ahora no lo pongo para no ensuciar las ventas.
                 this.save();
             },
 
-            // --- Gestión de Nuevos Productos ---
+            // --- Vistas y UI ---
 
-            openAddModal() {
-                document.getElementById('modal-add').classList.remove('hidden');
-                document.getElementById('new-cake-name').value = '';
-                document.getElementById('new-cake-stock').value = '1';
+            switchView(viewName) {
+                this.currentView = viewName;
+                
+                // Clases de Tabs
+                const tabInv = document.getElementById('tab-inventory');
+                const tabHis = document.getElementById('tab-history');
+                
+                const activeClass = "bg-white text-pink-600 shadow-sm";
+                const inactiveClass = "text-pink-100 hover:bg-pink-600/50";
+
+                if (viewName === 'inventory') {
+                    document.getElementById('view-inventory').classList.remove('hidden');
+                    document.getElementById('view-history').classList.add('hidden');
+                    tabInv.className = `flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeClass}`;
+                    tabHis.className = `flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${inactiveClass}`;
+                } else {
+                    document.getElementById('view-inventory').classList.add('hidden');
+                    document.getElementById('view-history').classList.remove('hidden');
+                    tabInv.className = `flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${inactiveClass}`;
+                    tabHis.className = `flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeClass}`;
+                }
             },
 
-            closeAddModal() {
-                document.getElementById('modal-add').classList.add('hidden');
-            },
-
-            adjustNewStock(amount) {
-                const input = document.getElementById('new-cake-stock');
-                let val = parseInt(input.value) || 0;
-                val = Math.max(0, val + amount);
-                input.value = val;
-            },
-
+            // --- Modales ---
+            openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); document.getElementById('new-cake-name').value = ''; document.getElementById('new-cake-stock').value = '1'; },
+            closeAddModal() { document.getElementById('modal-add').classList.add('hidden'); },
+            adjustNewStock(n) { const el = document.getElementById('new-cake-stock'); el.value = Math.max(0, parseInt(el.value||0) + n); },
             addNewProduct() {
                 const name = document.getElementById('new-cake-name').value.trim();
                 const stock = parseInt(document.getElementById('new-cake-stock').value) || 0;
-                
-                if (!name) return alert("Escribe el nombre de la torta");
-
-                this.data.push({
-                    id: Date.now(),
-                    name: name,
-                    totalStock: stock,
-                    reservations: [],
-                    credits: [],
-                    imageColor: 'bg-pink-500'
-                });
-                
+                if (!name) return alert("Nombre requerido");
+                this.data.inventory.push({ id: Date.now(), name: name, totalStock: stock, reservations: [], credits: [], imageColor: 'bg-pink-500' });
                 this.closeAddModal();
                 this.save();
             },
-
-            // --- Gestión de Reset ---
-
-            confirmReset() {
-                document.getElementById('modal-reset').classList.remove('hidden');
-            },
-
-            closeResetModal() {
-                document.getElementById('modal-reset').classList.add('hidden');
-            },
-
+            confirmReset() { document.getElementById('modal-reset').classList.remove('hidden'); },
+            closeResetModal() { document.getElementById('modal-reset').classList.add('hidden'); },
             resetData() {
                 this.data = JSON.parse(JSON.stringify(this.initialData));
                 this.closeResetModal();
                 this.save();
             },
 
-            // --- Renderizado ---
+            // --- Renders ---
 
             render() {
+                // Si estamos en inventario, renderizar inventario
+                if (this.currentView === 'inventory') {
+                    this.renderInventory();
+                }
+                // Siempre renderizar historia para tenerla lista (o renderizar solo cuando se ve)
+                this.renderHistory();
+                lucide.createIcons();
+            },
+
+            renderHistory() {
+                const list = document.getElementById('history-list');
+                const empty = document.getElementById('empty-history');
+                const count = document.getElementById('history-count');
+                
+                count.innerText = `${this.data.history.length} registros`;
+
+                if (this.data.history.length === 0) {
+                    list.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    empty.classList.add('flex');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                empty.classList.remove('flex');
+
+                list.innerHTML = this.data.history.map(item => {
+                    let icon, colorClass, label;
+                    const date = new Date(item.date).toLocaleDateString('es-VE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+                    switch(item.type) {
+                        case 'sale':
+                            icon = 'shopping-bag'; colorClass = 'bg-green-100 text-green-600'; label = 'Venta Efectivo';
+                            break;
+                        case 'credit':
+                            icon = 'notebook-pen'; colorClass = 'bg-red-100 text-red-600'; label = 'Fiado (Crédito)';
+                            break;
+                        case 'reservation_done':
+                            icon = 'calendar-check'; colorClass = 'bg-blue-100 text-blue-600'; label = 'Reserva Entregada';
+                            break;
+                        case 'paid':
+                            icon = 'dollar-sign'; colorClass = 'bg-emerald-100 text-emerald-600'; label = 'Deuda Pagada';
+                            break;
+                        default:
+                            icon = 'circle'; colorClass = 'bg-gray-100 text-gray-600'; label = 'Movimiento';
+                    }
+
+                    return `
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-full ${colorClass}">
+                                    <i data-lucide="${icon}" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-700 text-sm">${label}</p>
+                                    <p class="text-xs text-slate-500">${item.cakeName} <span class="mx-1">•</span> ${item.clientName}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">${date}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            renderInventory() {
                 const inventoryList = document.getElementById('inventory-list');
                 const dashboard = document.getElementById('dashboard');
                 
-                // 1. Render Dashboard
-                const totalStock = this.data.reduce((acc, item) => acc + item.totalStock, 0);
-                const totalRes = this.data.reduce((acc, item) => acc + (item.reservations ? item.reservations.length : 0), 0);
-                const totalFree = this.data.reduce((acc, item) => acc + (item.totalStock - (item.reservations ? item.reservations.length : 0)), 0);
+                const totalStock = this.data.inventory.reduce((acc, item) => acc + item.totalStock, 0);
+                const totalRes = this.data.inventory.reduce((acc, item) => acc + (item.reservations ? item.reservations.length : 0), 0);
+                const totalFree = this.data.inventory.reduce((acc, item) => acc + (item.totalStock - (item.reservations ? item.reservations.length : 0)), 0);
 
                 dashboard.innerHTML = `
                     <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 text-center">
@@ -302,29 +387,24 @@
                     </div>
                 `;
 
-                // 2. Render Cards
                 inventoryList.innerHTML = '';
                 
-                this.data.forEach(cake => {
+                this.data.inventory.forEach(cake => {
                     const reservations = cake.reservations || [];
                     const credits = cake.credits || [];
                     const available = cake.totalStock - reservations.length;
                     const isOutOfStock = cake.totalStock === 0;
                     
-                    // Estado de botones
                     const disabledClass = (available <= 0) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : '';
                     const sellClass = (available > 0) ? 'bg-green-600 text-white shadow-lg shadow-green-200 active:scale-95 hover:bg-green-700' : disabledClass;
                     const actionBtnClass = (available > 0) ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400';
                     const creditBtnClass = (available > 0) ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-slate-200 text-slate-400';
 
-                    // HTML de Reservas
                     let resHtml = '';
                     if (reservations.length > 0) {
                         resHtml = `
                             <div class="bg-blue-50/50 rounded-lg p-3 border border-blue-100 mt-4">
-                                <h3 class="text-xs font-bold text-blue-500 uppercase mb-2 flex items-center gap-1">
-                                    <i data-lucide="calendar-clock" class="w-3 h-3"></i> Apartadas (${reservations.length})
-                                </h3>
+                                <h3 class="text-xs font-bold text-blue-500 uppercase mb-2 flex items-center gap-1"><i data-lucide="calendar-clock" class="w-3 h-3"></i> Apartadas (${reservations.length})</h3>
                                 <div class="space-y-2">
                                     ${reservations.map(r => `
                                         <div class="flex items-center justify-between bg-white p-2 rounded shadow-sm">
@@ -333,21 +413,16 @@
                                                 <button onclick="app.completeReservation(${cake.id}, '${r.id}')" class="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
                                                 <button onclick="app.cancelReservation(${cake.id}, '${r.id}')" class="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                             </div>
-                                        </div>
-                                    `).join('')}
+                                        </div>`).join('')}
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     }
 
-                    // HTML de Créditos (Fiados)
                     let credHtml = '';
                     if (credits.length > 0) {
                         credHtml = `
                             <div class="bg-red-50/50 rounded-lg p-3 border border-red-100 mt-4">
-                                <h3 class="text-xs font-bold text-red-500 uppercase mb-2 flex items-center gap-1">
-                                    <i data-lucide="notebook-pen" class="w-3 h-3"></i> Por Cobrar (${credits.length})
-                                </h3>
+                                <h3 class="text-xs font-bold text-red-500 uppercase mb-2 flex items-center gap-1"><i data-lucide="notebook-pen" class="w-3 h-3"></i> Por Cobrar (${credits.length})</h3>
                                 <div class="space-y-2">
                                     ${credits.map(c => `
                                         <div class="flex items-center justify-between bg-white p-2 rounded shadow-sm border-l-4 border-red-400">
@@ -358,22 +433,16 @@
                                             <button onclick="app.settleCredit(${cake.id}, '${c.id}')" class="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-bold">
                                                 <i data-lucide="dollar-sign" class="w-3 h-3"></i> Pagó
                                             </button>
-                                        </div>
-                                    `).join('')}
+                                        </div>`).join('')}
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     }
 
-                    // Card Completa
                     const cardHtml = `
-                        <div class="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200 fade-in">
-                            <!-- Header de la Tarjeta -->
+                        <div class="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
                             <div class="p-4 border-b border-slate-100 flex justify-between items-start bg-gradient-to-r from-white to-slate-50">
                                 <div class="flex gap-3 items-center">
-                                    <div class="h-12 w-12 rounded-full flex items-center justify-center text-white shadow-sm ${cake.imageColor}">
-                                        <i data-lucide="cake" class="w-6 h-6"></i>
-                                    </div>
+                                    <div class="h-12 w-12 rounded-full flex items-center justify-center text-white shadow-sm ${cake.imageColor}"><i data-lucide="cake" class="w-6 h-6"></i></div>
                                     <div>
                                         <h2 class="font-bold text-lg text-slate-800">${cake.name}</h2>
                                         <div class="flex gap-2 text-sm">
@@ -383,49 +452,30 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button onclick="app.addStock(${cake.id})" class="bg-pink-50 text-pink-600 hover:bg-pink-100 p-2 rounded-full transition-colors" title="Agregar Stock">
-                                    <i data-lucide="plus" class="w-5 h-5"></i>
-                                </button>
+                                <button onclick="app.addStock(${cake.id})" class="bg-pink-50 text-pink-600 hover:bg-pink-100 p-2 rounded-full transition-colors" title="Agregar Stock"><i data-lucide="plus" class="w-5 h-5"></i></button>
                             </div>
-
-                            <!-- Acciones -->
                             <div class="p-4 bg-slate-50">
                                 <div class="space-y-2">
-                                    <!-- Venta Rápida -->
                                     <button onclick="app.directSale(${cake.id})" ${available <= 0 ? 'disabled' : ''} class="w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-semibold text-sm transition-all ${sellClass}">
                                         <i data-lucide="shopping-bag" class="w-4 h-4"></i> Venta Rápida (Efectivo)
                                     </button>
-                                    
-                                    <!-- Inputs Reserva/Fiado -->
                                     <div class="flex gap-1">
                                         <input type="text" id="input-${cake.id}" placeholder="Nombre cliente..." ${available <= 0 ? 'disabled' : ''} class="flex-1 px-3 py-3 text-sm border border-slate-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        
-                                        <button onclick="app.addReservation(${cake.id})" ${available <= 0 ? 'disabled' : ''} class="px-3 flex flex-col items-center justify-center text-[10px] gap-1 min-w-[60px] transition-colors border-r border-white/20 ${actionBtnClass}">
-                                            <i data-lucide="save" class="w-4 h-4"></i> Reservar
-                                        </button>
-
-                                        <button onclick="app.creditSale(${cake.id})" ${available <= 0 ? 'disabled' : ''} class="px-3 rounded-r-xl flex flex-col items-center justify-center text-[10px] gap-1 min-w-[60px] transition-colors ${creditBtnClass}">
-                                            <i data-lucide="notebook-pen" class="w-4 h-4"></i> Fiado
-                                        </button>
+                                        <button onclick="app.addReservation(${cake.id})" ${available <= 0 ? 'disabled' : ''} class="px-3 flex flex-col items-center justify-center text-[10px] gap-1 min-w-[60px] transition-colors border-r border-white/20 ${actionBtnClass}"><i data-lucide="save" class="w-4 h-4"></i> Reservar</button>
+                                        <button onclick="app.creditSale(${cake.id})" ${available <= 0 ? 'disabled' : ''} class="px-3 rounded-r-xl flex flex-col items-center justify-center text-[10px] gap-1 min-w-[60px] transition-colors ${creditBtnClass}"><i data-lucide="notebook-pen" class="w-4 h-4"></i> Fiado</button>
                                     </div>
                                 </div>
                                 ${resHtml}
                                 ${credHtml}
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                     inventoryList.insertAdjacentHTML('beforeend', cardHtml);
                 });
-
-                // Re-inicializar iconos Lucide después de inyectar HTML nuevo
-                lucide.createIcons();
-                
-                // Restaurar valores de inputs si es necesario (no implementado para simpleza, se limpian al guardar)
             }
         };
-
-        // Iniciar App
         app.init();
     </script>
 </body>
 </html>
+
+
