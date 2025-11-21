@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Componentes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg: #eef2ff;
+            --card: #ffffff;
+            --muted: #6b7280;
+            --accent: #2563eb;
+            --accent-600: #1e40af;
+            --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+        html,body{
+            height:100%;
+            margin:0;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+            color: #0f172a;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:40px 20px;
+        }
+        .container {
+            width:100%;
+            max-width:920px;
+            background:var(--card);
+            padding:36px;
+            border-radius:14px;
+            box-shadow:var(--shadow);
+            border:1px solid rgba(15,23,42,0.04);
+        }
+        header{
+            display:flex;
+            align-items:flex-start;
+            gap:18px;
+        }
+        .badge{
+            font-size:28px;
+            line-height:1;
+            width:64px;
+            height:64px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:linear-gradient(135deg,var(--accent),var(--accent-600));
+            color:white;
+            border-radius:12px;
+            box-shadow:0 6px 18px rgba(37,99,235,0.18);
+        }
+        h1{
+            margin:0 0 6px 0;
+            font-size:22px;
+            font-weight:700;
+            color:#0b1220;
+        }
+        p.lead{
+            margin:0;
+            color:var(--muted);
+            font-size:14px;
+        }
+        .grid{
+            display:grid;
+            grid-template-columns:1fr;
+            gap:18px;
+            margin-top:26px;
+        }
+        .card-link{
+            display:flex;
+            align-items:center;
+            gap:16px;
+            padding:18px;
+            background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,255,0.9));
+            border-radius:12px;
+            border:1px solid rgba(15,23,42,0.04);
+            text-decoration:none;
+            color:inherit;
+            transition:transform .14s ease, box-shadow .14s ease;
+            box-shadow:0 4px 12px rgba(15,23,42,0.04);
+        }
+        .card-link:hover{
+            transform:translateY(-4px);
+            box-shadow:0 12px 30px rgba(15,23,42,0.09);
+        }
+        .card-icon{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            width:56px;
+            height:56px;
+            background:linear-gradient(135deg, rgba(37,99,235,0.12), rgba(37,99,235,0.06));
+            border-radius:10px;
+            font-size:22px;
+        }
+        .card-content{
+            flex:1;
+        }
+        .card-title{
+            font-weight:600;
+            margin:0 0 4px 0;
+            color:#06132b;
+        }
+        .card-desc{
+            margin:0;
+            color:var(--muted);
+            font-size:13px;
+        }
+        .cta{
+            background:var(--accent);
+            color:white;
+            padding:10px 14px;
+            border-radius:10px;
+            text-decoration:none;
+            font-weight:600;
+            transition:background .12s ease, transform .12s ease;
+        }
+        .cta:hover{background:var(--accent-600); transform:translateY(-2px)}
+        footer{margin-top:20px; color:var(--muted); font-size:13px}
+
+        @media (min-width:680px){
+            .grid{grid-template-columns:1fr 1fr}
+        }
+        @media (max-width:480px){
+            .container{padding:20px}
+            .badge{width:52px;height:52px;font-size:22px}
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" role="main">
+    <header>
+        <div class="badge" aria-hidden>🧁</div>
+        <div>
+            <h1>Inventario de Tortas</h1>
+            <p class="lead">Accede a las herramientas y recursos para gestionar inventarios rápidamente.</p>
+        </div>
+    </header>
+
+    <section class="grid" aria-label="Entradas principales">
+        <a class="card-link" href="inv-tortas/inv-tortas.html" target="_blank" rel="noopener noreferrer">
+            <div class="card-icon">📦</div>
+            <div class="card-content">
+                <p class="card-title">Inventario - Tortas</p>
+                <p class="card-desc">Ver y editar el inventario de ingredientes y productos. Abre en una nueva pestaña.</p>
+            </div>
+            <div>
+                <span class="cta">Entrar</span>
+            </div>
+        </a>
+    </section>
+
+    <footer>
+        <div>Pequeño directorio local — sin archivos añadidos.</div>
+    </footer>
+</div>
+
+</body>
+</html>
