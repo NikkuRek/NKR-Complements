@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Sistema Financiero V3.12.3 (Recursion Fix)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',      
+                            card: '#1e293b',    
+                            border: '#334155'   
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Animación suave para cambio de vistas */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-dark-bg dark:text-slate-100 h-screen flex flex-col overflow-hidden transition-colors duration-300">
+
+    <!-- HEADER (Fijo arriba) -->
+    <header class="bg-white/90 dark:bg-dark-card/90 backdrop-blur-md shadow-sm p-4 z-10 transition-colors duration-300">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-slate-800 dark:text-white"><i class="fas fa-wallet text-indigo-600 mr-2"></i>Finanzas<span class="text-indigo-600">Pro</span></h1>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="app.resetData()" class="text-xs text-red-400 hover:text-red-600 ml-1 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition"><i class="fas fa-power-off"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT (Scrollable area) -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-4 pb-28 relative">
+        <div class="max-w-md mx-auto h-full">
+
+            <!-- VISTA 1: INICIO (HOME) -->
+            <div id="view-home" class="space-y-6 fade-in">
+                
+                <!-- TASAS DE CAMBIO -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-center shadow-sm">
+                        <span class="text-slate-500 dark:text-slate-400 font-semibold">Bs/$ (USD):</span>
+                        <input type="number" id="rate-usd" onchange="ui.setRate('USD', this.value)" class="w-20 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400 outline-none focus:ring-1 focus:ring-indigo-500 transition" placeholder="0.00">
+                    </div>
+                    <div class="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-center shadow-sm">
+                        <span class="text-slate-500 dark:text-slate-400 font-semibold">Bs/₮ (USDT):</span>
+                        <input type="number" id="rate-usdt" onchange="ui.setRate('USDT', this.value)" class="w-20 p-1 border rounded bg-white dark:bg-slate-700 dark:border-slate-600 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:ring-1 focus:ring-emerald-500 transition" placeholder="0.00">
+                    </div>
+                </div>
+
+                <!-- BALANCE GENERAL -->
+                <section class="bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-6 shadow-lg relative overflow-hidden dark:border dark:border-slate-700">
+                    <div class="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-indigo-500 rounded-full opacity-20 blur-xl"></div>
+                    
+                    <div class="flex justify-between items-start mb-1 relative z-10">
+                        <p class="text-slate-400 text-sm font-medium">Patrimonio Neto Total</p>
+                        <select id="currency-select" onchange="ui.setCurrency(this.value)" class="bg-slate-800/60 text-white text-[10px] font-bold uppercase rounded-lg py-1 px-2 focus:outline-none cursor-pointer border border-slate-700 hover:bg-slate-700 transition-colors">
+                            <option value="USD" class="text-slate-900">USD ($)</option>
+                            <option value="VES" class="text-slate-900">VES (Bs.)</option>
+                            <option value="USDT" class="text-slate-900">USDT (₮)</option>
+                        </select>
+                    </div>
+
+                    <h2 id="display-equity" class="text-3xl font-bold mb-4 relative z-10">$0.00</h2>
+                    
+                    <div class="grid grid-cols-3 gap-2 border-t border-slate-700 pt-4 text-center relative z-10">
+                        <div><p class="text-[10px] text-emerald-400 mb-1 uppercase tracking-wide">Activos</p><p id="display-assets" class="font-semibold text-sm">$0.00</p></div>
+                        <div><p class="text-[10px] text-blue-400 mb-1 uppercase tracking-wide">Por Cobrar</p><p id="display-receivables" class="font-semibold text-sm">$0.00</p></div>
+                        <div><p class="text-[10px] text-rose-400 mb-1 uppercase tracking-wide">Deudas</p><p id="display-liabilities" class="font-semibold text-sm">$0.00</p></div>
+                    </div>
+                </section>
+
+                <!-- ACCIONES RÁPIDAS -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="ui.openModal('INCOME')" class="bg-emerald-100/80 dark:bg-emerald-900/30 backdrop-blur-md text-emerald-700 dark:text-emerald-400 py-3 rounded-xl font-semibold hover:bg-emerald-200/90 dark:hover:bg-emerald-900/50 transition flex flex-col items-center justify-center gap-1 shadow-sm border border-emerald-200/50 dark:border-emerald-700/30">
+                        <i class="fas fa-plus-circle text-xl"></i> <span class="text-xs">Ingreso</span>
+                    </button>
+                    <button onclick="ui.openModal('EXPENSE')" class="bg-rose-100/80 dark:bg-rose-900/30 backdrop-blur-md text-rose-700 dark:text-rose-400 py-3 rounded-xl font-semibold hover:bg-rose-200/90 dark:hover:bg-rose-900/50 transition flex flex-col items-center justify-center gap-1 shadow-sm border border-rose-200/50 dark:border-rose-700/30">
+                        <i class="fas fa-minus-circle text-xl"></i> <span class="text-xs">Gasto</span>
+                    </button>
+                    <button onclick="ui.openTransferModal()" class="bg-blue-100/80 dark:bg-blue-900/30 backdrop-blur-md text-blue-700 dark:text-blue-400 py-3 rounded-xl font-semibold hover:bg-blue-200/90 dark:hover:bg-blue-900/50 transition flex flex-col items-center justify-center gap-1 shadow-sm border border-blue-200/50 dark:border-blue-700/30">
+                        <i class="fas fa-exchange-alt text-xl"></i> <span class="text-xs">Transferir</span>
+                    </button>
+                </div>
+
+                <!-- SECCIONES DE CUENTAS -->
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i class="fas fa-building-columns text-indigo-500"></i> Mis Cuentas</h3>
+                        <button onclick="ui.toggleManager('ASSET')" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50/80 dark:bg-indigo-900/20 backdrop-blur-sm px-2 py-1 rounded">Gestionar</button>
+                    </div>
+                    <div id="list-ASSET" class="space-y-3"></div>
+                    <div id="manage-ASSET" class="hidden bg-white/95 dark:bg-dark-card/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-100 dark:border-dark-border">
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Crear Cuenta</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="new-ASSET-name" placeholder="Nombre" class="flex-1 p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                <select id="new-ASSET-currency" class="w-24 p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"><option value="USD">USD</option><option value="VES">VES</option><option value="USDT">USDT</option></select>
+                            </div>
+                            <div class="mb-2">
+                                <input type="number" id="new-ASSET-init" placeholder="Saldo Inicial (Opcional)" class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            </div>
+                            <button onclick="app.handleCreateAccount('ASSET')" class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md">Guardar</button>
+                        </div>
+                        <div id="crud-list-ASSET" class="space-y-2 text-sm"></div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i class="fas fa-hand-holding-dollar text-emerald-500"></i> Por Cobrar</h3>
+                        <button onclick="ui.toggleManager('RECEIVABLE')" class="text-xs text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50/80 dark:bg-emerald-900/20 backdrop-blur-sm px-2 py-1 rounded">Gestionar</button>
+                    </div>
+                    <div id="list-RECEIVABLE" class="space-y-3"></div>
+                    <div id="manage-RECEIVABLE" class="hidden bg-white/95 dark:bg-dark-card/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-100 dark:border-dark-border">
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nueva Cuenta</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="new-RECEIVABLE-name" placeholder="Deudor" class="flex-1 p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                <select id="new-RECEIVABLE-currency" class="w-24 p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"><option value="USD">USD</option><option value="VES">VES</option></select>
+                            </div>
+                            <!-- FECHAS -->
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Inicio</label>
+                                    <input type="date" id="new-RECEIVABLE-date" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Cobro (Opcional)</label>
+                                    <input type="date" id="new-RECEIVABLE-due" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <input type="number" id="new-RECEIVABLE-init" placeholder="Monto deuda inicial (Opcional)" class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            </div>
+                            <button onclick="app.handleCreateAccount('RECEIVABLE')" class="w-full bg-emerald-600/90 text-white py-2 rounded text-sm font-medium shadow-md">Guardar</button>
+                        </div>
+                        <div id="crud-list-RECEIVABLE" class="space-y-2 text-sm"></div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i class="fas fa-file-invoice-dollar text-rose-500"></i> Deudas</h3>
+                        <button onclick="ui.toggleManager('LIABILITY')" class="text-xs text-rose-600 dark:text-rose-400 font-medium bg-rose-50/80 dark:bg-rose-900/20 backdrop-blur-sm px-2 py-1 rounded">Gestionar</button>
+                    </div>
+                    <div id="list-LIABILITY" class="space-y-3"></div>
+                    <div id="manage-LIABILITY" class="hidden bg-white/95 dark:bg-dark-card/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-100 dark:border-dark-border">
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nueva Deuda</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="new-LIABILITY-name" placeholder="Acreedor" class="flex-1 p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                <select id="new-LIABILITY-currency" class="w-24 p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"><option value="USD">USD</option><option value="VES">VES</option></select>
+                            </div>
+                            <!-- FECHAS -->
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Inicio</label>
+                                    <input type="date" id="new-LIABILITY-date" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Pago (Opcional)</label>
+                                    <input type="date" id="new-LIABILITY-due" class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <input type="number" id="new-LIABILITY-init" placeholder="Monto deuda inicial (Opcional)" class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            </div>
+                            <button onclick="app.handleCreateAccount('LIABILITY')" class="w-full bg-rose-600/90 text-white py-2 rounded text-sm font-medium shadow-md">Guardar</button>
+                        </div>
+                        <div id="crud-list-LIABILITY" class="space-y-2 text-sm"></div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200">Presupuesto (Buckets)</h3>
+                        <div class="flex gap-2">
+                            <button onclick="ui.openBucketTransferModal()" class="text-xs text-blue-500 dark:text-blue-400 font-medium bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-sm px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition">
+                                <i class="fas fa-exchange-alt mr-1"></i> Mover
+                            </button>
+                            <button onclick="ui.toggleManager('BUCKET')" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50/80 dark:bg-indigo-900/20 backdrop-blur-sm px-2 py-1 rounded">Gestionar</button>
+                        </div>
+                    </div>
+                    <div id="buckets-list" class="grid grid-cols-2 gap-3"></div>
+                    <div id="manage-BUCKET" class="hidden bg-white/95 dark:bg-dark-card/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-100 dark:border-dark-border">
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                           <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nuevo Bucket</h4>
+                           <input type="text" id="new-BUCKET-name" placeholder="Categoría" class="w-full p-2 border rounded text-sm mb-2 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                           <input type="number" id="new-BUCKET-init" placeholder="Fondo Inicial (Opcional)" class="w-full p-2 border rounded text-sm mb-2 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                           
+                           <button onclick="app.handleCreateBucket()" class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md">Guardar</button>
+                       </div>
+                       <div id="crud-list-BUCKET" class="space-y-2 text-sm"></div>
+                   </div>
+                </section>
+                <div class="h-24"></div>
+            </div>
+
+            <!-- VISTA 2: MOVIMIENTOS -->
+            <div id="view-transactions" class="space-y-4 hidden fade-in h-full">
+                <!-- Header Sticky -->
+                <div class="flex items-center justify-between mb-4 sticky top-0 bg-slate-50 dark:bg-dark-bg z-10 py-2">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-indigo-600 w-1 h-6 rounded-r"></div>
+                        <h3 class="text-xl font-bold text-slate-700 dark:text-slate-200">Historial</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <span id="filtered-total" class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-200/50 dark:bg-slate-800/50 px-2 py-1 rounded-lg"></span>
+                        <button onclick="ui.toggleFilters()" class="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full font-medium hover:bg-indigo-200 transition">
+                            <i class="fas fa-filter mr-1"></i> Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANEL DE FILTROS -->
+                <div id="filter-panel" class="hidden bg-white/95 dark:bg-dark-card/95 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-4 space-y-3">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="filter-search" oninput="ui.applyFilters()" placeholder="Buscar descripción..." class="w-full pl-8 p-2 text-sm border rounded-lg bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Desde</label><input type="date" id="filter-date-start" onchange="ui.applyFilters()" class="w-full p-1.5 text-xs border rounded bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-white"></div>
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Hasta</label><input type="date" id="filter-date-end" onchange="ui.applyFilters()" class="w-full p-1.5 text-xs border rounded bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-white"></div>
+                    </div>
+                    <div class="flex gap-2 justify-between">
+                        <button onclick="ui.setFilterDate('week')" class="text-[10px] flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-slate-600 dark:text-slate-300 py-1 rounded transition">Semana</button>
+                        <button onclick="ui.setFilterDate('fortnight')" class="text-[10px] flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-slate-600 dark:text-slate-300 py-1 rounded transition">Quincena</button>
+                        <button onclick="ui.setFilterDate('month')" class="text-[10px] flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-slate-600 dark:text-slate-300 py-1 rounded transition">Mes</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Tipo</label><select id="filter-type" onchange="ui.applyFilters()" class="w-full p-1.5 text-xs border rounded bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-white"><option value="ALL">Todos</option><option value="INCOME">Ingresos</option><option value="EXPENSE">Gastos</option></select></div>
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Categoría</label><select id="filter-bucket" onchange="ui.applyFilters()" class="w-full p-1.5 text-xs border rounded bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-white"><option value="ALL">Todas</option></select></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="filter-min" oninput="ui.applyFilters()" placeholder="Min $" class="w-full p-1.5 text-xs border rounded bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                        <input type="number" id="filter-max" oninput="ui.applyFilters()" placeholder="Max $" class="w-full p-1.5 text-xs border rounded bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <button onclick="ui.clearFilters()" class="w-full py-2 text-xs text-rose-500 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition">Limpiar Filtros</button>
+                </div>
+
+                <!-- Contenedor de lista -->
+                <div class="bg-white/90 dark:bg-dark-card/90 backdrop-blur-md rounded-2xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[50vh]">
+                    <div id="transactions-list" class="divide-y divide-slate-100 dark:divide-slate-700"></div>
+                </div>
+                <div class="h-20"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- BOTTOM NAV BAR -->
+    <nav class="fixed bottom-0 w-full bg-white/95 dark:bg-dark-card/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 shadow-lg z-50 pb-safe">
+        <div class="max-w-md mx-auto flex justify-around items-center h-16">
+            <button onclick="ui.switchView('home')" id="nav-btn-home" class="flex flex-col items-center justify-center w-full h-full text-indigo-600 dark:text-indigo-400 transition-colors">
+                <i class="fas fa-home text-xl mb-1"></i>
+                <span class="text-[10px] font-medium">Inicio</span>
+            </button>
+            <div class="relative -top-5">
+                <button onclick="ui.openModal('EXPENSE')" class="bg-indigo-600 hover:bg-indigo-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition transform active:scale-95 border-4 border-slate-50 dark:border-dark-bg">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <button onclick="ui.switchView('transactions')" id="nav-btn-transactions" class="flex flex-col items-center justify-center w-full h-full text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
+                <i class="fas fa-list-ul text-xl mb-1"></i>
+                <span class="text-[10px] font-medium">Movimientos</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODALES -->
+    <div id="transaction-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white/95 dark:bg-dark-card/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-transform duration-300 border border-white/20">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-lg font-bold">Registrar</h3>
+                <button onclick="ui.closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="tx-form" onsubmit="app.addTransactionWrapper(event)">
+                <input type="hidden" id="tx-type">
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Monto</label>
+                    <div class="relative">
+                        <span id="modal-currency-symbol" class="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
+                        <input type="number" id="tx-amount" step="0.01" class="w-full pl-8 p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-xl font-bold dark:bg-slate-700/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50/50" placeholder="0.00" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Descripción</label>
+                    <input type="text" id="tx-desc" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700/50 dark:text-white bg-slate-50/50" required>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Cuenta</label>
+                        <select id="tx-account" onchange="ui.updateModalCurrency()" class="w-full p-2 border rounded-lg dark:bg-slate-700/50 dark:text-white text-sm bg-slate-50/50" required></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Bucket</label>
+                        <select id="tx-bucket" class="w-full p-2 border rounded-lg dark:bg-slate-700/50 dark:text-white text-sm bg-slate-50/50" required></select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE TRANSFERENCIA -->
+    <div id="transfer-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white/95 dark:bg-dark-card/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border border-white/20">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-blue-600 dark:text-blue-400"><i class="fas fa-exchange-alt mr-2"></i>Transferencia</h3>
+                <button onclick="document.getElementById('transfer-modal').classList.add('hidden')" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.executeTransfer(event)">
+                <div class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mb-3 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Desde</label>
+                    <select id="t-source" onchange="ui.calcTransfer()" class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                    <div class="mt-2 relative">
+                        <input type="number" id="t-amount" oninput="ui.calcTransfer()" step="0.01" class="w-full p-2 pl-2 border rounded dark:bg-slate-700/50 dark:text-white bg-white/50" placeholder="Monto" required>
+                    </div>
+                </div>
+                <div class="flex justify-center -my-5 relative z-10">
+                    <div class="bg-white dark:bg-slate-600 rounded-full p-2 shadow border dark:border-slate-500"><i class="fas fa-arrow-down text-slate-400 dark:text-slate-200"></i></div>
+                </div>
+                <div class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mt-3 mb-4 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Hacia</label>
+                    <select id="t-target" onchange="ui.calcTransfer()" class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                    <div class="mt-2">
+                        <p class="text-xs text-slate-400">Recibirás:</p>
+                        <p id="t-result" class="text-lg font-bold text-emerald-600 dark:text-emerald-400">0.00</p>
+                        <p id="t-rate-info" class="text-[10px] text-slate-400 italic"></p>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600/90 hover:bg-blue-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TRANSFERENCIA DE BUCKETS -->
+    <div id="bucket-transfer-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white/95 dark:bg-dark-card/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border border-white/20">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-indigo-500 dark:text-indigo-400"><i class="fas fa-exchange-alt mr-2"></i>Mover Presupuesto</h3>
+                <button onclick="document.getElementById('bucket-transfer-modal').classList.add('hidden')" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.executeBucketTransfer(event)">
+                <div class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mb-3 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Sacar de:</label>
+                    <select id="bt-source" class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                </div>
+                <div class="flex justify-center -my-5 relative z-10">
+                    <div class="bg-white dark:bg-slate-600 rounded-full p-2 shadow border dark:border-slate-500"><i class="fas fa-arrow-down text-slate-400 dark:text-slate-200"></i></div>
+                </div>
+                <div class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mt-3 mb-4 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Mover a:</label>
+                    <select id="bt-target" class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Monto a mover</label>
+                    <input type="number" id="bt-amount" step="0.01" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-xl font-bold dark:bg-slate-700/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50/50" placeholder="0.00" required>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar Movimiento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL LIQUIDAR -->
+    <div id="settle-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white/95 dark:bg-dark-card/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border border-white/20">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="settle-title" class="text-lg font-bold text-slate-800 dark:text-white">Registrar Pago</h3>
+                <button onclick="document.getElementById('settle-modal').classList.add('hidden')" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.executeSettle(event)">
+                <input type="hidden" id="settle-id">
+                <input type="hidden" id="settle-type">
+                
+                <div class="bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-xl mb-4 text-center border border-slate-100 dark:border-slate-700">
+                    <p class="text-xs text-slate-500 uppercase mb-1" id="settle-label-account">Cuenta</p>
+                    <p class="text-xl font-bold text-slate-800 dark:text-white" id="settle-account-name">---</p>
+                    <p class="text-sm font-mono text-slate-500" id="settle-account-balance">---</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1" id="settle-label-amount">Monto a Liquidar</label>
+                    <input type="number" id="settle-amount" step="0.01" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl text-xl font-bold dark:bg-slate-700/50 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none bg-slate-50/50" required>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-xs font-medium text-slate-500 mb-1" id="settle-label-source">Origen de Fondos</label>
+                    <select id="settle-source" class="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700/50 dark:text-white text-sm bg-slate-50/50" required></select>
+                </div>
+
+                <button type="submit" id="settle-btn" class="w-full bg-emerald-600/90 hover:bg-emerald-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        const DB_KEY = 'finanzas_app_v3_12_dates'; 
+
+        class FinanceManager {
+            constructor() {
+                this.data = this._loadData();
+            }
+            _loadData() {
+                const stored = localStorage.getItem(DB_KEY);
+                if (stored) return JSON.parse(stored);
+                return {
+                    accounts: [
+                        { id: 'a1', name: 'Banco USD', type: 'ASSET', currency: 'USD', balance: 100 },
+                        { id: 'a2', name: 'Efectivo Bs', type: 'ASSET', currency: 'VES', balance: 5000 },
+                        { id: 'a3', name: 'Binance', type: 'ASSET', currency: 'USDT', balance: 50 },
+                        { id: 'l1', name: 'Visa', type: 'LIABILITY', currency: 'USD', balance: -50, startDate: new Date().toISOString(), dueDate: null }
+                    ],
+                    buckets: [ { id: 'b1', name: 'General', balance: 0 }, { id: 'b2', name: 'Ocio', balance: 0 } ],
+                    transactions: [
+                        { id: 'tx_sample_1', date: new Date().toISOString(), amount: 15.00, type: 'EXPENSE', accountId: 'a1', bucketId: 'b2', description: 'Suscripción Netflix' }
+                    ]
+                };
+            }
+            _save() { localStorage.setItem(DB_KEY, JSON.stringify(this.data)); ui.renderAll(); }
+            
+            createAccount(name, type, currency, initialBalance = 0, startDate = null, dueDate = null) { 
+                const newId = 'acc_' + Date.now();
+                const accountObj = { 
+                    id: newId, 
+                    name, 
+                    type, 
+                    currency, 
+                    balance: 0,
+                    startDate: startDate || new Date().toISOString().split('T')[0], 
+                    dueDate: dueDate || null
+                };
+                this.data.accounts.push(accountObj); 
+                if (initialBalance && initialBalance > 0) {
+                    let txType = 'INCOME';
+                    if (type === 'LIABILITY') txType = 'EXPENSE';
+                    this.addTransaction(initialBalance, txType, newId, null, 'Saldo Inicial');
+                } else {
+                    this._save();
+                }
+            }
+            
+            deleteAccount(id) { if(!confirm("¿Eliminar cuenta?")) return; this.data.accounts = this.data.accounts.filter(a => a.id !== id); this._save(); }
+            
+            createBucket(name, initialBalance = 0) { 
+                const newId = 'buc_' + Date.now();
+                this.data.buckets.push({ id: newId, name, balance: 0 });
+                if (initialBalance && initialBalance > 0) {
+                    const tx = { id: 'tx_init_' + Date.now(), date: new Date().toISOString(), amount: parseFloat(initialBalance), type: 'INCOME', accountId: null, bucketId: newId, description: 'Fondo Inicial' };
+                    const bucket = this.data.buckets.find(b => b.id === newId);
+                    if(bucket) bucket.balance += parseFloat(initialBalance);
+                    this.data.transactions.unshift(tx);
+                }
+                this._save(); 
+            }
+            
+            deleteBucket(id) { if(!confirm("¿Eliminar bucket?")) return; this.data.buckets = this.data.buckets.filter(b => b.id !== id); this._save(); }
+            
+            addTransaction(amount, type, accountId, bucketId, description) {
+                amount = parseFloat(amount);
+                const tx = { id: 'tx_' + Date.now(), date: new Date().toISOString(), amount, type, accountId, bucketId, description };
+                const account = this.data.accounts.find(a => a.id === accountId);
+                if(account) { if (type === 'INCOME' || type === 'TRANSFER_IN') account.balance += amount; else account.balance -= amount; }
+                if(bucketId) { const bucket = this.data.buckets.find(b => b.id === bucketId); if(bucket) { if (type === 'INCOME') bucket.balance += amount; else if (type === 'EXPENSE') bucket.balance -= amount; } }
+                this.data.transactions.unshift(tx); 
+                this._save();
+            }
+            deleteTransaction(id) {
+                if(!confirm("¿Borrar?")) return;
+                const tx = this.data.transactions.find(t => t.id === id);
+                if(!tx) return;
+                
+                if(tx.type === 'BUCKET_XFER') {
+                    const sourceB = this.data.buckets.find(b => b.id === tx.sourceBucketId);
+                    const targetB = this.data.buckets.find(b => b.id === tx.bucketId); 
+                    if(sourceB) sourceB.balance += tx.amount; 
+                    if(targetB) targetB.balance -= tx.amount; 
+                } else {
+                    const account = this.data.accounts.find(a => a.id === tx.accountId);
+                    if(account) { if (tx.type === 'INCOME' || tx.type === 'TRANSFER_IN') account.balance -= tx.amount; else account.balance += tx.amount; }
+                    if(tx.bucketId) { const bucket = this.data.buckets.find(b => b.id === tx.bucketId); if(bucket) { if (tx.type === 'INCOME') bucket.balance -= tx.amount; else if (tx.type === 'EXPENSE') bucket.balance += tx.amount; } }
+                }
+                
+                this.data.transactions = this.data.transactions.filter(t => t.id !== id);
+                this._save();
+            }
+            
+            executeSettle(event) {
+                event.preventDefault();
+                const accId = document.getElementById('settle-id').value;
+                const type = document.getElementById('settle-type').value; 
+                const relatedAccId = document.getElementById('settle-source').value;
+                const amount = parseFloat(document.getElementById('settle-amount').value);
+
+                if(!amount || amount <= 0) return alert("Monto inválido");
+
+                const mainAcc = this.data.accounts.find(a => a.id === accId);
+                const relatedAcc = this.data.accounts.find(a => a.id === relatedAccId);
+                
+                const rateUSD = parseFloat(document.getElementById('rate-usd').value) || 1;
+                const rateUSDT = parseFloat(document.getElementById('rate-usdt').value) || 1;
+                
+                let relatedAmount = amount; 
+
+                if(mainAcc.currency !== relatedAcc.currency) {
+                    const s = relatedAcc.currency; 
+                    const t = mainAcc.currency;    
+
+                    if(t === 'USD' && s === 'VES') relatedAmount = amount * rateUSD;
+                    else if(t === 'USDT' && s === 'VES') relatedAmount = amount * rateUSDT;
+                    else if(t === 'VES' && s === 'USD') relatedAmount = amount / rateUSD;
+                    else if(t === 'VES' && s === 'USDT') relatedAmount = amount / rateUSDT;
+                    else if(t === 'USD' && s === 'USDT') relatedAmount = amount; 
+                    else if(t === 'USDT' && s === 'USD') relatedAmount = amount;
+                }
+
+                if (type === 'LIABILITY') {
+                    this.addTransaction(relatedAmount, 'TRANSFER_OUT', relatedAccId, null, `Pago a ${mainAcc.name}`);
+                    this.addTransaction(amount, 'TRANSFER_IN', accId, null, `Abono/Pago desde ${relatedAcc.name}`);
+                } else {
+                    this.addTransaction(amount, 'TRANSFER_OUT', accId, null, `Cobrado hacia ${relatedAcc.name}`);
+                    this.addTransaction(relatedAmount, 'TRANSFER_IN', relatedAccId, null, `Cobro de ${mainAcc.name}`);
+                }
+
+                document.getElementById('settle-modal').classList.add('hidden');
+                ui.renderAll();
+            }
+
+            executeTransfer(event) {
+                event.preventDefault();
+                const sourceId = document.getElementById('t-source').value;
+                const targetId = document.getElementById('t-target').value;
+                const amount = parseFloat(document.getElementById('t-amount').value);
+                if(sourceId === targetId || !amount) return;
+                const sourceAcc = this.data.accounts.find(a => a.id === sourceId);
+                const targetAcc = this.data.accounts.find(a => a.id === targetId);
+                const rateUSD = parseFloat(document.getElementById('rate-usd').value) || 1;
+                const rateUSDT = parseFloat(document.getElementById('rate-usdt').value) || 1;
+                let finalAmount = amount;
+                if(sourceAcc.currency !== targetAcc.currency) {
+                    const s = sourceAcc.currency; const t = targetAcc.currency;
+                    if(s === 'USD' && t === 'VES') finalAmount = amount * rateUSD;
+                    else if(s === 'USDT' && t === 'VES') finalAmount = amount * rateUSDT;
+                    else if(s === 'VES' && t === 'USD') finalAmount = amount / rateUSD;
+                    else if(s === 'VES' && t === 'USDT') finalAmount = amount / rateUSDT;
+                    else if(s === 'USD' && t === 'USDT') finalAmount = (amount * rateUSD) / rateUSDT;
+                    else if(s === 'USDT' && t === 'USD') finalAmount = (amount * rateUSDT) / rateUSD;
+                }
+                this.addTransaction(amount, 'TRANSFER_OUT', sourceId, null, `Transferencia a ${targetAcc.name}`);
+                this.addTransaction(finalAmount, 'TRANSFER_IN', targetId, null, `Recibido de ${sourceAcc.name}`);
+                document.getElementById('transfer-modal').classList.add('hidden');
+                document.getElementById('t-amount').value = '';
+            }
+            executeBucketTransfer(event) {
+                event.preventDefault();
+                const sourceId = document.getElementById('bt-source').value;
+                const targetId = document.getElementById('bt-target').value;
+                const amount = parseFloat(document.getElementById('bt-amount').value);
+                if(sourceId === targetId || !amount || amount <= 0) return alert("Datos inválidos");
+                const sourceBucket = this.data.buckets.find(b => b.id === sourceId);
+                const targetBucket = this.data.buckets.find(b => b.id === targetId);
+                sourceBucket.balance -= amount; targetBucket.balance += amount;
+                const tx = { id: 'tx_' + Date.now(), date: new Date().toISOString(), amount: amount, type: 'BUCKET_XFER', bucketId: targetId, sourceBucketId: sourceId, description: `Reasignación: ${sourceBucket.name} ➝ ${targetBucket.name}`, accountId: null };
+                this.data.transactions.unshift(tx);
+                this._save();
+                document.getElementById('bucket-transfer-modal').classList.add('hidden');
+                document.getElementById('bt-amount').value = '';
+            }
+            getBalanceSheet(globalCurrency, rateUSD, rateUSDT) {
+                const convert = (amount, currency) => {
+                    if (currency === globalCurrency) return amount;
+                    if (globalCurrency === 'VES') { if (currency === 'USD') return amount * rateUSD; if (currency === 'USDT') return amount * rateUSDT; }
+                    if (globalCurrency === 'USD') { if (currency === 'VES') return amount / rateUSD; if (currency === 'USDT') return (amount * rateUSDT) / rateUSD; }
+                    if (globalCurrency === 'USDT') { if (currency === 'VES') return amount / rateUSDT; if (currency === 'USD') return (amount * rateUSD) / rateUSDT; }
+                    return amount;
+                };
+                let assets = 0, liabilities = 0, receivables = 0;
+                this.data.accounts.forEach(acc => {
+                    const val = convert(acc.balance, acc.currency);
+                    if(acc.type === 'ASSET') assets += val; else if(acc.type === 'LIABILITY') liabilities += val; else if(acc.type === 'RECEIVABLE') receivables += val;
+                });
+                return { assets, liabilities, receivables, equity: assets + liabilities + receivables };
+            }
+            resetData() { if(confirm("¿RESET?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
+            filterTransactions(filters) {
+                return this.data.transactions.filter(tx => {
+                    if (filters.search && !tx.description.toLowerCase().includes(filters.search.toLowerCase())) return false;
+                    const txDate = new Date(tx.date);
+                    if (filters.start) { const [y, m, d] = filters.start.split('-').map(Number); if (txDate < new Date(y, m - 1, d)) return false; }
+                    if (filters.end) { const [y, m, d] = filters.end.split('-').map(Number); const ed = new Date(y, m - 1, d); ed.setHours(23, 59, 59, 999); if (txDate > ed) return false; }
+                    if (filters.type !== 'ALL') {
+                        if (filters.type === 'INCOME' && !(tx.type.includes('INCOME') || tx.type.includes('TRANSFER_IN'))) return false;
+                        if (filters.type === 'EXPENSE' && !(tx.type.includes('EXPENSE') || tx.type.includes('TRANSFER_OUT'))) return false;
+                    }
+                    if (filters.bucket !== 'ALL') if (tx.bucketId !== filters.bucket) return false;
+                    if (filters.min && tx.amount < parseFloat(filters.min)) return false;
+                    if (filters.max && tx.amount > parseFloat(filters.max)) return false;
+                    return true;
+                });
+            }
+        }
+
+        const ui = {
+            currentView: 'home',
+            init: () => {
+                const savedCurr = localStorage.getItem('currency') || 'USD';
+                document.getElementById('currency-select').value = savedCurr;
+                document.getElementById('rate-usd').value = localStorage.getItem('rate_USD') || 40;
+                document.getElementById('rate-usdt').value = localStorage.getItem('rate_USDT') || 40;
+                ui.renderAll();
+                ui.switchView('home'); 
+            },
+            switchView: (viewName) => {
+                ui.currentView = viewName;
+                const homeView = document.getElementById('view-home');
+                const txView = document.getElementById('view-transactions');
+                const btnHome = document.getElementById('nav-btn-home');
+                const btnTx = document.getElementById('nav-btn-transactions');
+
+                if (viewName === 'home') {
+                    homeView.classList.remove('hidden');
+                    txView.classList.add('hidden');
+                    btnHome.className = "flex flex-col items-center justify-center w-full h-full text-indigo-600 dark:text-indigo-400 font-bold transition-colors";
+                    btnTx.className = "flex flex-col items-center justify-center w-full h-full text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors";
+                } else {
+                    homeView.classList.add('hidden');
+                    txView.classList.remove('hidden');
+                    btnTx.className = "flex flex-col items-center justify-center w-full h-full text-indigo-600 dark:text-indigo-400 font-bold transition-colors";
+                    btnHome.className = "flex flex-col items-center justify-center w-full h-full text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors";
+                    ui.populateFilterSelects();
+                    ui.applyFilters();
+                }
+            },
+            setCurrency: (v) => { localStorage.setItem('currency', v); ui.renderAll(); },
+            setRate: (type, val) => { localStorage.setItem('rate_' + type, val); ui.renderAll(); },
+            formatMoney: (amount, currency) => {
+                const global = localStorage.getItem('currency') || 'USD';
+                const target = currency || global;
+                const locale = target === 'VES' ? 'es-VE' : 'en-US';
+                let code = target; if(target === 'USDT') code = 'USD'; 
+                let fmt = new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(amount);
+                if(target === 'USDT') fmt = fmt.replace('$', '₮');
+                return fmt;
+            },
+            toggleManager: (type) => { const el = document.getElementById('manage-' + type); el.classList.toggle('hidden'); if(!el.classList.contains('hidden')) ui.renderCRUD(type); },
+            renderCRUD: (type) => {
+                let listEl = document.getElementById('crud-list-' + type); listEl.innerHTML = '';
+                let items = type === 'BUCKET' ? app.data.buckets : app.data.accounts.filter(a => a.type === type);
+                items.forEach(item => { listEl.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700"><span>${item.name}</span><button onclick="${type === 'BUCKET' ? `app.deleteBucketWrapper('${item.id}')` : `app.deleteAccountWrapper('${item.id}', '${type}')`}" class="text-rose-500 px-2"><i class="fas fa-trash-alt"></i></button></div>`; });
+            },
+            openModal: (type) => {
+                document.getElementById('transaction-modal').classList.remove('hidden');
+                document.getElementById('tx-type').value = type;
+                document.getElementById('modal-title').innerText = type === 'INCOME' ? 'Ingreso' : 'Gasto';
+                ui.populateSelects(); ui.updateModalCurrency();
+            },
+            openTransferModal: () => {
+                document.getElementById('transfer-modal').classList.remove('hidden');
+                const source = document.getElementById('t-source'); const target = document.getElementById('t-target');
+                source.innerHTML = ''; target.innerHTML = '';
+                app.data.accounts.filter(a => a.type === 'ASSET').forEach(a => { const opt = `<option value="${a.id}" data-curr="${a.currency}">${a.name} (${a.currency})</option>`; source.innerHTML += opt; target.innerHTML += opt; });
+                ui.calcTransfer();
+            },
+            openBucketTransferModal: () => {
+                document.getElementById('bucket-transfer-modal').classList.remove('hidden');
+                const s = document.getElementById('bt-source'); const t = document.getElementById('bt-target');
+                s.innerHTML = ''; t.innerHTML = '';
+                app.data.buckets.forEach(b => { const opt = `<option value="${b.id}">${b.name} (${ui.formatMoney(b.balance)})</option>`; s.innerHTML += opt; t.innerHTML += opt; });
+            },
+            
+            openSettleModal: (id, type) => {
+                const acc = app.data.accounts.find(a => a.id === id);
+                if (!acc) return;
+
+                const modal = document.getElementById('settle-modal');
+                modal.classList.remove('hidden');
+                
+                document.getElementById('settle-id').value = id;
+                document.getElementById('settle-type').value = type;
+                document.getElementById('settle-account-name').innerText = acc.name;
+                const pending = Math.abs(acc.balance);
+                document.getElementById('settle-account-balance').innerText = `Pendiente: ${ui.formatMoney(pending, acc.currency)}`;
+                document.getElementById('settle-amount').value = pending;
+
+                const title = document.getElementById('settle-title');
+                const labelSrc = document.getElementById('settle-label-source');
+                const btn = document.getElementById('settle-btn');
+                const sourceSelect = document.getElementById('settle-source');
+                
+                sourceSelect.innerHTML = '';
+                app.data.accounts.filter(a => a.type === 'ASSET').forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.text = `${a.name} (${ui.formatMoney(a.balance, a.currency)})`;
+                    sourceSelect.appendChild(opt);
+                });
+
+                if (type === 'LIABILITY') {
+                    title.innerText = "Registrar Pago de Deuda";
+                    title.className = "text-lg font-bold text-rose-600 dark:text-rose-400";
+                    labelSrc.innerText = "Pagar desde (Origen)";
+                    btn.innerText = "Confirmar Pago";
+                    btn.className = "w-full bg-rose-600/90 hover:bg-rose-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95";
+                } else {
+                    title.innerText = "Registrar Cobro";
+                    title.className = "text-lg font-bold text-emerald-600 dark:text-emerald-400";
+                    labelSrc.innerText = "Depositar en (Destino)";
+                    btn.innerText = "Confirmar Cobro";
+                    btn.className = "w-full bg-emerald-600/90 hover:bg-emerald-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95";
+                }
+            },
+
+            calcTransfer: () => {
+                const sSelect = document.getElementById('t-source'); const tSelect = document.getElementById('t-target');
+                const amount = parseFloat(document.getElementById('t-amount').value) || 0;
+                if(!sSelect.options.length) return; 
+                const sCurr = sSelect.options[sSelect.selectedIndex]?.dataset.curr;
+                const tCurr = tSelect.options[tSelect.selectedIndex]?.dataset.curr;
+                const rateUSD = parseFloat(document.getElementById('rate-usd').value) || 1;
+                const rateUSDT = parseFloat(document.getElementById('rate-usdt').value) || 1;
+                let result = amount; let info = "1:1";
+                if(sCurr !== tCurr) {
+                    if(sCurr === 'USD' && tCurr === 'VES') { result = amount * rateUSD; info = `x ${rateUSD}`; }
+                    else if(sCurr === 'USDT' && tCurr === 'VES') { result = amount * rateUSDT; info = `x ${rateUSDT}`; }
+                    else if(sCurr === 'VES' && tCurr === 'USD') { result = amount / rateUSD; info = `/ ${rateUSD}`; }
+                    else if(sCurr === 'VES' && tCurr === 'USDT') { result = amount / rateUSDT; info = `/ ${rateUSDT}`; }
+                    else if(sCurr === 'USD' && tCurr === 'USDT') { result = (amount * rateUSD) / rateUSDT; info = `Arbitraje`; }
+                    else if(sCurr === 'USDT' && tCurr === 'USD') { result = (amount * rateUSDT) / rateUSD; info = `Arbitraje`; }
+                }
+                document.getElementById('t-result').innerText = ui.formatMoney(result, tCurr);
+                document.getElementById('t-rate-info').innerText = info;
+            },
+            closeModal: () => { document.getElementById('transaction-modal').classList.add('hidden'); document.getElementById('tx-form').reset(); },
+            populateSelects: () => {
+                const accSelect = document.getElementById('tx-account'); const bucSelect = document.getElementById('tx-bucket');
+                accSelect.innerHTML = ''; bucSelect.innerHTML = '';
+                app.data.accounts.forEach(acc => { accSelect.innerHTML += `<option value="${acc.id}" data-currency="${acc.currency}">${acc.name} (${ui.formatMoney(acc.balance, acc.currency)})</option>`; });
+                bucSelect.innerHTML = '<option value="">Sin Bucket (General)</option>';
+                app.data.buckets.forEach(buc => { bucSelect.innerHTML += `<option value="${buc.id}">${buc.name}</option>`; });
+            },
+            toggleFilters: () => { const panel = document.getElementById('filter-panel'); panel.classList.toggle('hidden'); },
+            populateFilterSelects: () => { const bucketSelect = document.getElementById('filter-bucket'); const currentVal = bucketSelect.value; bucketSelect.innerHTML = '<option value="ALL">Todas</option>'; app.data.buckets.forEach(b => { bucketSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`; }); bucketSelect.value = currentVal || "ALL"; },
+            setFilterDate: (range) => {
+                const start = document.getElementById('filter-date-start'); const end = document.getElementById('filter-date-end'); const now = new Date(); now.setHours(0,0,0,0);
+                let startDate = new Date(now); let endDate = new Date(now); 
+                if (range === 'week') { const day = now.getDay(); startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); } 
+                else if (range === 'fortnight') { if (now.getDate() <= 15) { startDate.setDate(1); endDate = new Date(now.getFullYear(), now.getMonth(), 15); } else { startDate.setDate(16); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); } } 
+                else if (range === 'month') { startDate.setDate(1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); }
+                const fmt = d => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; };
+                start.value = fmt(startDate); end.value = fmt(endDate); ui.applyFilters();
+            },
+            clearFilters: () => { document.getElementById('filter-search').value = ''; document.getElementById('filter-date-start').value = ''; document.getElementById('filter-date-end').value = ''; document.getElementById('filter-type').value = 'ALL'; document.getElementById('filter-bucket').value = 'ALL'; document.getElementById('filter-min').value = ''; document.getElementById('filter-max').value = ''; ui.applyFilters(); },
+            applyFilters: () => {
+                const filters = { search: document.getElementById('filter-search').value, start: document.getElementById('filter-date-start').value, end: document.getElementById('filter-date-end').value, type: document.getElementById('filter-type').value, bucket: document.getElementById('filter-bucket').value, min: document.getElementById('filter-min').value, max: document.getElementById('filter-max').value };
+                const filteredTx = app.filterTransactions(filters); const globalCurr = localStorage.getItem('currency') || 'USD'; ui.renderTransactions(globalCurr, filteredTx);
+            },
+            updateModalCurrency: () => { const accSelect = document.getElementById('tx-account'); const curr = accSelect.options[accSelect.selectedIndex]?.dataset.currency; const symbols = { 'USD': '$', 'VES': 'Bs.', 'USDT': '₮' }; document.getElementById('modal-currency-symbol').innerText = symbols[curr] || '$'; },
+            renderTransactions: (globalCurr, transactions = null) => {
+                const tList = document.getElementById('transactions-list'); if(!tList) return;
+                const dataToShow = transactions || app.data.transactions;
+                const totalLabel = document.getElementById('filtered-total'); if(totalLabel) totalLabel.innerText = `${dataToShow.length} mov.`;
+                if (dataToShow.length === 0) { tList.innerHTML = `<div class="p-10 text-center text-slate-400 text-sm">No hay movimientos coincidentes</div>`; return; }
+                tList.innerHTML = dataToShow.map(tx => {
+                    const acc = app.data.accounts.find(a => a.id === tx.accountId);
+                    const curr = acc ? acc.currency : globalCurr;
+                    let color = 'text-slate-700 dark:text-slate-200'; let icon = 'fa-circle'; let bgIcon = 'bg-slate-100 dark:bg-slate-700';
+                    
+                    if(tx.type === 'BUCKET_XFER') {
+                        color = 'text-blue-500 dark:text-blue-400';
+                        icon = 'fa-random'; 
+                        bgIcon = 'bg-blue-100 dark:bg-blue-900/30';
+                        return `<div class="p-4 flex justify-between items-center group hover:bg-slate-50 dark:hover:bg-slate-800 transition"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full ${bgIcon} flex items-center justify-center ${color}"><i class="fas ${icon}"></i></div><div><p class="font-bold text-sm text-slate-800 dark:text-slate-200">${tx.description}</p><p class="text-xs text-slate-400">${new Date(tx.date).toLocaleDateString()} • Reasignación</p></div></div><div class="flex items-center gap-3"><span class="font-bold ${color}">${ui.formatMoney(tx.amount, globalCurr)}</span><button onclick="app.deleteTransaction('${tx.id}')" class="text-slate-300 hover:text-rose-500 opacity-50 hover:opacity-100"><i class="fas fa-trash"></i></button></div></div>`;
+                    }
+
+                    if(tx.type.includes('INCOME') || tx.type.includes('TRANSFER_IN')) { color = 'text-emerald-600 dark:text-emerald-400'; icon = 'fa-arrow-down'; bgIcon = 'bg-emerald-100 dark:bg-emerald-900/30'; }
+                    if(tx.type.includes('EXPENSE') || tx.type.includes('TRANSFER_OUT')) { color = 'text-rose-600 dark:text-rose-400'; icon = 'fa-arrow-up'; bgIcon = 'bg-rose-100 dark:bg-rose-900/30'; }
+                    return `<div class="p-4 flex justify-between items-center group hover:bg-slate-50 dark:hover:bg-slate-800 transition"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full ${bgIcon} flex items-center justify-center ${color}"><i class="fas ${icon}"></i></div><div><p class="font-bold text-sm text-slate-800 dark:text-slate-200">${tx.description}</p><p class="text-xs text-slate-400">${new Date(tx.date).toLocaleDateString()} • ${acc?.name || '---'}</p></div></div><div class="flex items-center gap-3"><span class="font-bold ${color}">${tx.type.includes('EXPENSE') || tx.type.includes('OUT') ? '-' : '+'}${ui.formatMoney(tx.amount, curr)}</span><button onclick="app.deleteTransaction('${tx.id}')" class="text-slate-300 hover:text-rose-500 opacity-50 hover:opacity-100"><i class="fas fa-trash"></i></button></div></div>`;
+                }).join('');
+            },
+            renderList: (type, elementId) => {
+                const list = document.getElementById(elementId); list.innerHTML = '';
+                const items = app.data.accounts.filter(a => a.type === type);
+                if(items.length === 0) list.innerHTML = `<p class="text-xs text-slate-400 italic text-center">No hay registros</p>`;
+                items.forEach(acc => {
+                    let iconColor = 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300';
+                    let icon = 'fa-building-columns';
+                    let actionBtn = ''; 
+
+                    let datesHtml = '';
+                    // FECHAS SOLO SI NO ES ACTIVO
+                    if (type !== 'ASSET') {
+                        const start = new Date(acc.startDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                        datesHtml += `<span class="mr-2"><i class="fas fa-calendar-check mr-1"></i>${start}</span>`;
+
+                        if (acc.dueDate) {
+                            const due = new Date(acc.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                            datesHtml += `<span><i class="fas fa-flag-checkered mr-1"></i>${due}</span>`;
+                        }
+                    }
+
+                    if(type === 'LIABILITY') { 
+                        iconColor = 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300'; 
+                        icon = 'fa-file-invoice-dollar'; 
+                        actionBtn = `<button onclick="ui.openSettleModal('${acc.id}', 'LIABILITY')" class="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-200 transition ml-2"><i class="fas fa-check"></i></button>`;
+                    } 
+                    else if(type === 'RECEIVABLE') { 
+                        iconColor = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300'; 
+                        icon = 'fa-hand-holding-dollar'; 
+                        actionBtn = `<button onclick="ui.openSettleModal('${acc.id}', 'RECEIVABLE')" class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 transition ml-2"><i class="fas fa-dollar-sign"></i></button>`;
+                    }
+
+                    list.innerHTML += `
+                    <div class="flex justify-between items-center p-3 bg-white dark:bg-dark-card border border-slate-100 dark:border-dark-border rounded-xl shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconColor}">
+                                <i class="fas ${icon}"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm text-slate-700 dark:text-slate-200">${acc.name}</p>
+                                <div class="flex flex-col gap-0.5">
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-fit">${acc.currency}</span>
+                                    <div class="text-[10px] text-slate-400 mt-1">${datesHtml}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-bold ${acc.balance < 0 ? 'text-rose-500' : 'text-slate-700 dark:text-white'}">
+                                ${ui.formatMoney(acc.balance, acc.currency)}
+                            </span>
+                            ${actionBtn}
+                        </div>
+                    </div>`;
+                });
+            },
+            renderAll: () => {
+                const globalCurr = localStorage.getItem('currency') || 'USD';
+                const rateUSD = parseFloat(document.getElementById('rate-usd').value) || 1;
+                const rateUSDT = parseFloat(document.getElementById('rate-usdt').value) || 1;
+                const balance = app.getBalanceSheet(globalCurr, rateUSD, rateUSDT);
+                document.getElementById('display-assets').innerText = ui.formatMoney(balance.assets, globalCurr);
+                document.getElementById('display-liabilities').innerText = ui.formatMoney(balance.liabilities, globalCurr);
+                document.getElementById('display-receivables').innerText = ui.formatMoney(balance.receivables, globalCurr);
+                document.getElementById('display-equity').innerText = ui.formatMoney(balance.equity, globalCurr);
+                ui.renderList('ASSET', 'list-ASSET'); ui.renderList('LIABILITY', 'list-LIABILITY'); ui.renderList('RECEIVABLE', 'list-RECEIVABLE');
+                document.getElementById('buckets-list').innerHTML = app.data.buckets.map(b => `<div class="bg-white dark:bg-dark-card p-3 rounded-xl border border-slate-100 dark:border-dark-border shadow-sm"><p class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate">${b.name}</p><p class="text-indigo-600 dark:text-indigo-400 font-bold mt-1">${ui.formatMoney(b.balance, globalCurr)}</p></div>`).join('');
+                if (ui.currentView === 'home') { } else { ui.applyFilters(); }
+            }
+        };
+
+        const app = new FinanceManager();
+        app.handleCreateAccount = (type) => { 
+            const name = document.getElementById(`new-${type}-name`).value; 
+            const curr = document.getElementById(`new-${type}-currency`).value;
+            const initBal = document.getElementById(`new-${type}-init`).value;
+            const startDate = document.getElementById(`new-${type}-date`)?.value;
+            const dueDate = document.getElementById(`new-${type}-due`)?.value;
+            
+            if(!name) return alert("Requerido"); 
+            app.createAccount(name, type, curr, initBal, startDate, dueDate); 
+            
+            document.getElementById(`new-${type}-name`).value=''; 
+            document.getElementById(`new-${type}-init`).value=''; 
+            if(startDate) document.getElementById(`new-${type}-date`).value='';
+            if(dueDate) document.getElementById(`new-${type}-due`).value='';
+            
+            ui.toggleManager(type); 
+        };
+        app.handleCreateBucket = () => { 
+            const name = document.getElementById('new-BUCKET-name').value; 
+            const initBal = document.getElementById('new-BUCKET-init').value;
+            if(!name) return; 
+            app.createBucket(name, initBal); 
+            document.getElementById('new-BUCKET-name').value=''; 
+            document.getElementById('new-BUCKET-init').value='';
+            ui.toggleManager('BUCKET'); 
+        };
+        app.deleteAccountWrapper = (id, type) => { app.deleteAccount(id); ui.renderCRUD(type); };
+        app.deleteBucketWrapper = (id) => { app.deleteBucket(id); ui.renderCRUD('BUCKET'); };
+        app.addTransactionWrapper = (e) => { e.preventDefault(); app.addTransaction(document.getElementById('tx-amount').value, document.getElementById('tx-type').value, document.getElementById('tx-account').value, document.getElementById('tx-bucket').value, document.getElementById('tx-desc').value); ui.closeModal(); };
+        app.executeBucketTransfer = (e) => { app.executeBucketTransfer(e); };
+
+        ui.init();
+    </script>
+</body>
+</html>
