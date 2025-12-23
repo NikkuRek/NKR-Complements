@@ -1,4 +1,4 @@
-class FinanceManager {
+class denarius {
     constructor(db) {
         this.db = db;
         this.data = this.db.load();
@@ -122,10 +122,17 @@ class FinanceManager {
         if (type === 'LIABILITY') {
             if (!relatedAcc) { ui.showAlert('Cuenta origen inválida'); return; }
             await this.addTransaction(relatedAmount, 'EXPENSE', relatedAccId, null, `Pago a ${mainAcc.name}`);
-            // mainAcc balance will be adjusted after refresh
+
+            // Update liability balance (Debt is negative, paying adds to it towards 0)
+            mainAcc.balance += amount;
+            await this.updateAccount(mainAcc.id, { balance: mainAcc.balance });
         } else {
             if (!relatedAcc) { ui.showAlert('Cuenta destino inválida'); return; }
             await this.addTransaction(relatedAmount, 'INCOME', relatedAccId, null, `Cobro de ${mainAcc.name}`);
+
+            // Update receivable balance (Positive, collecting reduces it)
+            mainAcc.balance -= amount;
+            await this.updateAccount(mainAcc.id, { balance: mainAcc.balance });
         }
 
         document.getElementById('settle-modal').classList.add('hidden');

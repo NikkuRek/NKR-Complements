@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NKR - Denarius</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='%234f46e5'%20d='M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm0%2018c-4.41%200-8-3.59-8-8s3.59-8%208-8%208%203.59%208%208-3.59%208-8%208zm-1-12h2v6h-2zm0%208h2v2h-2z'/%3E%3C/svg%3E" type="image/svg+xml">
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='%234f46e5'%20d='M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm0%2018c-4.41%200-8-3.59-8-8s3.59-8%208-8%208%203.59%208%208-3.59%208-8%208zm-1-12h2v6h-2zm0%208h2v2h-2z'/%3E%3C/svg%3E"
+        type="image/svg+xml">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
@@ -14,16 +16,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body class="font-sans bg-slate-900 text-slate-100 h-screen flex flex-col overflow-hidden transition-colors duration-300">
+<body
+    class="font-sans bg-slate-900 text-slate-100 h-screen flex flex-col overflow-hidden transition-colors duration-300">
 
-    
+
     <!-- HEADER (Fijo arriba) -->
-    <header class="bg-slate-700/50 backdrop-blur-lg backdrop-saturate-150 shadow-lg p-4 z-10 transition-colors duration-300">
+    <header
+        class="bg-slate-700/50 backdrop-blur-lg backdrop-saturate-150 shadow-lg p-4 z-10 transition-colors duration-300">
         <div class="max-w-md mx-auto flex justify-between items-center">
             <a href="../../index.html" class="flex items-center gap-2 animate-fade-in"> <i
                     class="fas fa-home text-slate-200"></i> </a>
             <h1 class="text-xl font-bold text-white">
-                <i class="fas fa-wallet bg-gradient-to-tl from-blue-600 to-indigo-500 inline-block text-transparent bg-clip-text">
+                <i
+                    class="fas fa-wallet bg-gradient-to-tl from-blue-600 to-indigo-500 inline-block text-transparent bg-clip-text">
                 </i>
                 <span class="text-white">Dena</span><span class="text-indigo-500">rius</span>
             </h1>
@@ -123,11 +128,7 @@
                                 class="fas fa-building-columns text-indigo-400"></i> Mis Cuentas</h3>
                         <div class="flex gap-2">
                             <button onclick="ui.toggleManager('ASSET')"
-                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
-                                <i class="fas fa-plus-circle"></i>
-                            </button>
-                            <button onclick="ui.toggleManager('ASSET')"
-                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                                class="text-xs text-indigo-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-indigo-900/40 hover:text-indigo-200 transition">Gestionar</button>
                         </div>
                     </div>
                     <div id="list-ASSET" class="space-y-3"></div>
@@ -162,11 +163,7 @@
                                 class="fas fa-hand-holding-dollar text-emerald-500"></i> Por Cobrar</h3>
                         <div class="flex gap-2">
                             <button onclick="ui.toggleManager('RECEIVABLE')"
-                                class="text-xs text-emerald-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
-                                <i class="fas fa-plus-circle"></i>
-                            </button>
-                            <button onclick="ui.toggleManager('RECEIVABLE')"
-                                class="text-xs text-emerald-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                                class="text-xs text-emerald-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-emerald-900/40 hover:text-emerald-200 transition">Gestionar</button>
                         </div>
                     </div>
                     <div id="list-RECEIVABLE" class="space-y-3"></div>
@@ -215,11 +212,7 @@
                                 class="fas fa-file-invoice-dollar text-rose-500"></i> Deudas</h3>
                         <div class="flex gap-2">
                             <button onclick="ui.toggleManager('LIABILITY')"
-                                class="text-xs text-rose-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
-                                <i class="fas fa-plus-circle"></i>
-                            </button>
-                            <button onclick="ui.toggleManager('LIABILITY')"
-                                class="text-xs text-rose-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                                class="text-xs text-rose-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-rose-900/40 hover:text-rose-200 transition">Gestionar</button>
                         </div>
                     </div>
                     <div id="list-LIABILITY" class="space-y-3"></div>
@@ -256,7 +249,7 @@
                                     class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
                             </div>
                             <button onclick="app.handleCreateAccount('LIABILITY')"
-                            class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                                class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
                         </div>
                         <div id="crud-list-LIABILITY" class="space-y-2 text-sm"></div>
                     </div>
@@ -267,15 +260,11 @@
                         <h3 class="font-bold text-slate-700 dark:text-slate-200">Presupuesto (Buckets)</h3>
                         <div class="flex gap-2">
                             <button onclick="ui.openBucketTransferModal()"
-                                class="text-xs text-blue-300 font-medium bg-slate-800/80 px-2 py-1 rounded hover:bg-slate-800/75 transition backdrop-blur-sm hover:backdrop-blur-md">
+                                class="text-xs text-blue-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 hover:bg-blue-900/40 hover:text-blue-200 transition backdrop-blur-sm">
                                 <i class="fas fa-exchange-alt mr-1"></i> Mover
                             </button>
                             <button onclick="ui.toggleManager('BUCKET')"
-                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
-                                <i class="fas fa-plus-circle"></i>
-                            </button>
-                            <button onclick="ui.toggleManager('BUCKET')"
-                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                                class="text-xs text-indigo-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-indigo-900/40 hover:text-indigo-200 transition">Gestionar</button>
                         </div>
                     </div>
                     <div id="buckets-list" class="grid grid-cols-2 gap-3"></div>
@@ -641,7 +630,8 @@
             <div class="flex justify-end gap-2">
                 <button onclick="ui.hideConfirmModal()"
                     class="px-4 py-2 bg-rose-100 text-rose-700 rounded-md hover:bg-rose-200 backdrop-blur-sm hover:backdrop-blur-md">Cancelar</button>
-                <button id="confirm-ok-btn" class="px-4 py-2 bg-indigo-600/90 text-white rounded-md backdrop-blur-sm hover:backdrop-blur-md transition">Aceptar</button>
+                <button id="confirm-ok-btn"
+                    class="px-4 py-2 bg-indigo-600/90 text-white rounded-md backdrop-blur-sm hover:backdrop-blur-md transition">Aceptar</button>
             </div>
         </div>
     </div>
@@ -689,10 +679,10 @@
     </div>
 
     <!-- LOGIC -->
-    <script src="js/Database.js"></script>
-    <script src="js/FinanceManager.js"></script>
-    <script src="js/UIManager.js"></script>
-    <script src="js/app.js"></script>
+    <script src="../../common/js/Database.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>

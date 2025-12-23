@@ -1,7 +1,7 @@
 (async function initApp(){
     const db = new Database('/api');
     await db.init();
-    const app = new FinanceManager(db);
+    const app = new denarius(db);
 
     // Conectar actualización de UI
     app.onUpdate = () => ui.renderAll();
@@ -74,5 +74,6 @@
     };
     app.addTransactionWrapper = async (e) => { e.preventDefault(); try { await app.addTransaction(document.getElementById('tx-amount').value, document.getElementById('tx-type').value, document.getElementById('tx-account').value, document.getElementById('tx-bucket').value, document.getElementById('tx-desc').value); ui.closeModal(); ui.renderAll(); } catch (err) { ui.showAlert('Error: ' + err.message); } };
 
+    window.app = app;
     ui.init();
 })();

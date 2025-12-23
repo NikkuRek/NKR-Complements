@@ -2,7 +2,7 @@ const DB_CONFIG = {
     KEY: 'denarius_db',
     INITIAL_DATA: {
         accounts: [
-            { id: '1', name: 'Banco', type: 'ASSET', currency: 'VES', balance: 30000},
+            { id: '1', name: 'Banco', type: 'ASSET', currency: 'VES', balance: 30000 },
             { id: '2', name: 'Efectivo Bs', type: 'ASSET', currency: 'VES', balance: 5000 },
             { id: '3', name: 'Binance', type: 'ASSET', currency: 'USDT', balance: 50 },
             { id: '4', name: 'Brownies', type: 'LIABILITY', currency: 'VES', balance: -500, startDate: new Date().toISOString(), dueDate: null },
@@ -79,7 +79,7 @@ class Database {
     async reset() {
         // Si hay endpoint reset implementado podríamos llamarlo; por ahora limpiamos local y forzamos recarga
         localStorage.removeItem(this.key);
-        try { await fetch(`${this.baseUrl}/sync`, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(DB_CONFIG.INITIAL_DATA) }); } catch(e) { /* ignore */ }
+        try { await fetch(`${this.baseUrl}/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(DB_CONFIG.INITIAL_DATA) }); } catch (e) { /* ignore */ }
         location.reload();
     }
 
@@ -195,6 +195,22 @@ class Database {
         if (!this.online) {
             const newId = Date.now();
             const tx = { id: String(newId), date: payload.date || new Date().toISOString(), amount: parseFloat(payload.amount), type: payload.type, accountId: payload.account_id ? String(payload.account_id) : null, bucketId: payload.bucket_id ? String(payload.bucket_id) : null, description: payload.description };
+            if (payload.account_id) {
+                const acc = this.data.accounts.find(a => a.id === String(payload.account_id));
+                if (acc) {
+                    if (payload.type === 'INCOME') acc.balance += parseFloat(payload.amount);
+                    if (payload.type === 'EXPENSE') acc.balance -= parseFloat(payload.amount);
+                }
+            }
+            if (payload.bucket_id) {
+                const b = this.data.buckets.find(x => x.id === String(payload.bucket_id));
+                // Income to bucket? Expense from bucket? Logic depends.
+                // Normally INCOME increases bucket, EXPENSE decreases.
+                if (b) {
+                    if (payload.type === 'INCOME') b.balance += parseFloat(payload.amount);
+                    if (payload.type === 'EXPENSE') b.balance -= parseFloat(payload.amount);
+                }
+            }
             this.data.transactions.unshift(tx);
             await this.save(this.data);
             return tx;

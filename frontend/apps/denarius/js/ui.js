@@ -125,8 +125,8 @@ const ui = {
     renderCRUD: (type) => {
         let listEl = document.getElementById('crud-list-' + type); listEl.innerHTML = '';
         let items = type === 'BUCKET' ? app.data.buckets : app.data.accounts.filter(a => a.type === type);
-        items.forEach(item => { 
-            listEl.innerHTML += `<div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700"><span class="text-white">${item.name}</span><div class="flex items-center gap-2"><button onclick="${type === 'BUCKET' ? `app.editBucketWrapper('${item.id}')` : `app.editAccountWrapper('${item.id}', '${type}')`}" class="text-indigo-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-edit"></i></button><button onclick="${type === 'BUCKET' ? `app.deleteBucketWrapper('${item.id}')` : `app.deleteAccountWrapper('${item.id}', '${type}')`}" class="text-rose-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-trash-alt"></i></button></div></div>`; 
+        items.forEach(item => {
+            listEl.innerHTML += `<div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700"><span class="text-white">${item.name}</span><div class="flex items-center gap-2"><button onclick="${type === 'BUCKET' ? `app.editBucketWrapper('${item.id}')` : `app.editAccountWrapper('${item.id}', '${type}')`}" class="text-indigo-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-edit"></i></button><button onclick="${type === 'BUCKET' ? `app.deleteBucketWrapper('${item.id}')` : `app.deleteAccountWrapper('${item.id}', '${type}')`}" class="text-rose-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-trash-alt"></i></button></div></div>`;
         });
     },
     openModal: (type) => {
@@ -262,44 +262,67 @@ const ui = {
     },
     renderList: (type, elementId) => {
         const list = document.getElementById(elementId); list.innerHTML = '';
-        const items = app.data.accounts.filter(a => a.type === type);
+        const items = app.data.accounts.filter(a => {
+            if (a.type !== type) return false;
+            // Ocultar deudas (LIABILITY) y cuentas por cobrar (RECEIVABLE) si el saldo es 0
+            if (type !== 'ASSET' && Math.abs(a.balance) < 0.009) return false;
+            return true;
+        });
         if (items.length === 0) {
             list.innerHTML = `<p class="text-xs text-slate-400 italic text-center">No hay registros</p>`;
             return;
         }
         items.forEach(acc => {
-            let iconColor = 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300';
-            let icon = 'fa-building-columns';
-            let actionBtn = '';
+            let iconColor = 'bg-slate-800 text-slate-400';
+            let icon = 'fa-wallet';
+            let borderColor = 'border-slate-700';
+
+            if (type === 'ASSET') {
+                if (acc.currency === 'USD') {
+                    iconColor = 'bg-blue-500/20 text-blue-400';
+                    icon = 'fa-dollar-sign';
+                    borderColor = 'border-blue-500/30';
+                } else if (acc.currency === 'VES') {
+                    iconColor = 'bg-indigo-500/20 text-indigo-400';
+                    icon = 'fa-money-bill-wave';
+                    borderColor = 'border-indigo-500/30';
+                } else if (acc.currency === 'USDT') {
+                    iconColor = 'bg-emerald-500/20 text-emerald-400';
+                    icon = 'fa-coins';
+                    borderColor = 'border-emerald-500/30';
+                }
+            } else if (type === 'LIABILITY') {
+                iconColor = 'bg-rose-500/20 text-rose-400';
+                icon = 'fa-file-invoice-dollar';
+                borderColor = 'border-rose-500/30';
+            } else if (type === 'RECEIVABLE') {
+                iconColor = 'bg-emerald-500/20 text-emerald-400';
+                icon = 'fa-hand-holding-dollar';
+                borderColor = 'border-emerald-500/30';
+            }
 
             let datesHtml = '';
-            // FECHAS SOLO SI NO ES ACTIVO
+            // Show dates only for non-assets
             if (type !== 'ASSET') {
                 const start = new Date(acc.startDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
                 datesHtml += `<span class="mr-2"><i class="fas fa-calendar-check mr-1"></i>${start}</span>`;
-
                 if (acc.dueDate) {
                     const due = new Date(acc.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
                     datesHtml += `<span><i class="fas fa-flag-checkered mr-1"></i>${due}</span>`;
                 }
             }
 
+            let actionBtn = '';
             if (type === 'LIABILITY') {
-                iconColor = 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300';
-                icon = 'fa-file-invoice-dollar';
-                actionBtn = `<button onclick="ui.openSettleModal('${acc.id}', 'LIABILITY')" class="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-200 transition ml-2 backdrop-blur-sm hover:backdrop-blur-md"><i class="fas fa-check"></i></button>`;
-            }
-            else if (type === 'RECEIVABLE') {
-                iconColor = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300';
-                icon = 'fa-hand-holding-dollar';
-                actionBtn = `<button onclick="ui.openSettleModal('${acc.id}', 'RECEIVABLE')" class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 transition ml-2 backdrop-blur-sm hover:backdrop-blur-md"><i class="fas fa-dollar-sign"></i></button>`;
+                actionBtn = `<button onclick="ui.openSettleModal('${acc.id}', 'LIABILITY')" class="w-8 h-8 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center hover:bg-rose-500/30 transition ml-2 backdrop-blur-sm"><i class="fas fa-check"></i></button>`;
+            } else if (type === 'RECEIVABLE') {
+                actionBtn = `<button onclick="ui.openSettleModal('${acc.id}', 'RECEIVABLE')" class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/30 transition ml-2 backdrop-blur-sm"><i class="fas fa-dollar-sign"></i></button>`;
             }
 
-            const inlineStyle = ui.getCssColor('card') ? `style="background-color: var(--color-card)"` : '';
             list.innerHTML += `
-            <div class="flex justify-between items-center p-3 bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-sm">
+            <div class="flex justify-between items-center p-3 bg-slate-800/50 border ${borderColor} rounded-xl shadow-sm hover:bg-slate-800 transition-colors">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconColor}" ${inlineStyle}>
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconColor}">
                         <i class="fas ${icon}"></i>
                     </div>
                     <div>
