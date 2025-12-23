@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NKR - Denarius</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='%234f46e5'%20d='M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm0%2018c-4.41%200-8-3.59-8-8s3.59-8%208-8%208%203.59%208%208-3.59%208-8%208zm-1-12h2v6h-2zm0%208h2v2h-2z'/%3E%3C/svg%3E" type="image/svg+xml">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="font-sans bg-slate-900 text-slate-100 h-screen flex flex-col overflow-hidden transition-colors duration-300">
+
+    
+    <!-- HEADER (Fijo arriba) -->
+    <header class="bg-slate-700/50 backdrop-blur-lg backdrop-saturate-150 shadow-lg p-4 z-10 transition-colors duration-300">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <a href="../../index.html" class="flex items-center gap-2 animate-fade-in"> <i
+                    class="fas fa-home text-slate-200"></i> </a>
+            <h1 class="text-xl font-bold text-white">
+                <i class="fas fa-wallet bg-gradient-to-tl from-blue-600 to-indigo-500 inline-block text-transparent bg-clip-text">
+                </i>
+                <span class="text-white">Dena</span><span class="text-indigo-500">rius</span>
+            </h1>
+
+            <div class="flex items-center gap-3">
+                <button onclick="app.resetDataWrapper()"
+                    class="text-xs text-red-300 hover:text-red-500 ml-1 p-2 rounded-full hover:bg-red-900/20 transition backdrop-blur-sm hover:backdrop-blur-md"><i
+                        class="fas fa-power-off"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT (Scrollable area) -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-4 pb-28 relative">
+        <div class="max-w-md mx-auto h-full">
+
+            <!-- VISTA 1: INICIO (HOME) -->
+            <div id="view-home" class="space-y-6 animate-fade-in">
+
+                <!-- TASAS DE CAMBIO -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div
+                        class="bg-slate-800/50 backdrop-blur-sm p-3 rounded-xl border border-slate-700 flex justify-between items-center shadow-sm">
+                        <span class="text-slate-400 font-semibold">Bs/$ (USD):</span>
+                        <input type="number" id="rate-usd" onchange="ui.setRate('USD', this.value)"
+                            class="w-20 p-1 border rounded bg-slate-700 border-slate-600 text-right font-mono font-bold text-indigo-400 outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                            placeholder="0.00">
+                        <button id="rate-usd-btn" onclick="ui.fetchUsdOfficial()" title="Actualizar tasa oficial"
+                            class="ml-2 text-xs px-2 py-1 rounded border bg-slate-700/50 text-slate-200 backdrop-blur-sm hover:backdrop-blur-md transition">⟲</button>
+                    </div>
+                    <div
+                        class="bg-slate-800/50 backdrop-blur-sm p-3 rounded-xl border border-slate-700 flex justify-between items-center shadow-sm">
+                        <span class="text-slate-400 font-semibold">Bs/₮ (USDT):</span>
+                        <input type="number" id="rate-usdt" onchange="ui.setRate('USDT', this.value)"
+                            class="w-20 p-1 border rounded bg-slate-700 border-slate-600 text-right font-mono font-bold text-emerald-300 outline-none focus:ring-1 focus:ring-emerald-500 transition"
+                            placeholder="0.00">
+                        <button id="rate-usdt-btn" onclick="ui.fetchUsdtParalelo()" title="Actualizar tasa paralelo"
+                            class="ml-2 text-xs px-2 py-1 rounded border bg-slate-700/50 text-slate-200 backdrop-blur-sm hover:backdrop-blur-md transition">⟲</button>
+                    </div>
+                </div>
+
+                <!-- BALANCE GENERAL -->
+                <section
+                    class="bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-6 shadow-lg relative overflow-hidden border border-slate-700">
+                    <div
+                        class="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-indigo-500 rounded-full opacity-20 blur-xl">
+                    </div>
+
+                    <div class="flex justify-between items-start mb-1 relative z-10">
+                        <p class="text-slate-400 text-sm font-medium">Patrimonio Neto Total</p>
+                        <select id="currency-select" onchange="ui.setCurrency(this.value)"
+                            class="bg-slate-800/60 text-white text-[10px] font-bold uppercase rounded-lg py-1 px-2 focus:outline-none cursor-pointer border border-slate-700 hover:bg-slate-700 transition-colors">
+                            <option value="USD" class="text-slate-100">USD ($)</option>
+                            <option value="VES" class="text-slate-100">VES (Bs.)</option>
+                            <option value="USDT" class="text-slate-100">USDT (₮)</option>
+                        </select>
+                    </div>
+
+                    <h2 id="display-equity" class="text-3xl font-bold mb-4 relative z-10">$0.00</h2>
+
+                    <div class="grid grid-cols-3 gap-2 border-t border-slate-700 pt-4 text-center relative z-10">
+                        <div>
+                            <p class="text-[10px] text-emerald-400 mb-1 uppercase tracking-wide">Activos</p>
+                            <p id="display-assets" class="font-semibold text-sm">$0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-emerald-400 mb-1 uppercase tracking-wide">Por Cobrar</p>
+                            <p id="display-receivables" class="font-semibold text-sm">$0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-rose-400 mb-1 uppercase tracking-wide">Deudas</p>
+                            <p id="display-liabilities" class="font-semibold text-sm">$0.00</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ACCIONES RÁPIDAS -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="ui.openModal('INCOME')"
+                        class="bg-emerald-900/30 text-emerald-300 py-3 rounded-xl font-semibold hover:bg-emerald-900/50 backdrop-blur-sm hover:backdrop-blur-md transition flex flex-col items-center justify-center gap-1 shadow-sm border border-emerald-700/30">
+                        <i class="fas fa-plus-circle text-xl"></i> <span class="text-xs">Ingreso</span>
+                    </button>
+                    <button onclick="ui.openModal('EXPENSE')"
+                        class="bg-rose-900/30 text-rose-300 py-3 rounded-xl font-semibold hover:bg-rose-900/50 backdrop-blur-sm hover:backdrop-blur-md transition flex flex-col items-center justify-center gap-1 shadow-sm border border-rose-700/30">
+                        <i class="fas fa-minus-circle text-xl"></i> <span class="text-xs">Gasto</span>
+                    </button>
+                    <button onclick="ui.openTransferModal()"
+                        class="bg-indigo-900/30 text-indigo-300 py-3 rounded-xl font-semibold hover:bg-indigo-900/50 backdrop-blur-sm hover:backdrop-blur-md transition flex flex-col items-center justify-center gap-1 shadow-sm border border-indigo-700/30">
+                        <i class="fas fa-exchange-alt text-xl"></i> <span class="text-xs">Transferir</span>
+                    </button>
+                </div>
+
+                <!-- SECCIONES DE CUENTAS -->
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-200 flex items-center gap-2"><i
+                                class="fas fa-building-columns text-indigo-400"></i> Mis Cuentas</h3>
+                        <div class="flex gap-2">
+                            <button onclick="ui.toggleManager('ASSET')"
+                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                            <button onclick="ui.toggleManager('ASSET')"
+                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                        </div>
+                    </div>
+                    <div id="list-ASSET" class="space-y-3"></div>
+                    <div id="manage-ASSET"
+                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Crear Cuenta</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="new-ASSET-name" placeholder="Nombre"
+                                    class="flex-1 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                <select id="new-ASSET-currency"
+                                    class="w-24 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                    <option value="USD">USD</option>
+                                    <option value="VES">VES</option>
+                                    <option value="USDT">USDT</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <input type="number" id="new-ASSET-init" placeholder="Saldo Inicial (Opcional)"
+                                    class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                            </div>
+                            <button onclick="app.handleCreateAccount('ASSET')"
+                                class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                        </div>
+                        <div id="crud-list-ASSET" class="space-y-2 text-sm"></div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i
+                                class="fas fa-hand-holding-dollar text-emerald-500"></i> Por Cobrar</h3>
+                        <div class="flex gap-2">
+                            <button onclick="ui.toggleManager('RECEIVABLE')"
+                                class="text-xs text-emerald-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                            <button onclick="ui.toggleManager('RECEIVABLE')"
+                                class="text-xs text-emerald-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                        </div>
+                    </div>
+                    <div id="list-RECEIVABLE" class="space-y-3"></div>
+                    <div id="manage-RECEIVABLE"
+                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
+                        <div class="mb-4 pb-4 border-b border-slate-700">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nueva Cuenta</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="new-RECEIVABLE-name" placeholder="Deudor"
+                                    class="flex-1 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                <select id="new-RECEIVABLE-currency"
+                                    class="w-24 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                    <option value="USD">USD</option>
+                                    <option value="VES">VES</option>
+                                </select>
+                            </div>
+                            <!-- FECHAS -->
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Inicio</label>
+                                    <input type="date" id="new-RECEIVABLE-date"
+                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Cobro
+                                        (Opcional)</label>
+                                    <input type="date" id="new-RECEIVABLE-due"
+                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <input type="number" id="new-RECEIVABLE-init"
+                                    placeholder="Monto deuda inicial (Opcional)"
+                                    class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            </div>
+                            <button onclick="app.handleCreateAccount('RECEIVABLE')"
+                                class="w-full bg-emerald-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                        </div>
+                        <div id="crud-list-RECEIVABLE" class="space-y-2 text-sm"></div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i
+                                class="fas fa-file-invoice-dollar text-rose-500"></i> Deudas</h3>
+                        <div class="flex gap-2">
+                            <button onclick="ui.toggleManager('LIABILITY')"
+                                class="text-xs text-rose-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                            <button onclick="ui.toggleManager('LIABILITY')"
+                                class="text-xs text-rose-300 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                        </div>
+                    </div>
+                    <div id="list-LIABILITY" class="space-y-3"></div>
+                    <div id="manage-LIABILITY"
+                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nueva Deuda</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="new-LIABILITY-name" placeholder="Acreedor"
+                                    class="flex-1 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                <select id="new-LIABILITY-currency"
+                                    class="w-24 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                    <option value="USD">USD</option>
+                                    <option value="VES">VES</option>
+                                </select>
+                            </div>
+                            <!-- FECHAS -->
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Inicio</label>
+                                    <input type="date" id="new-LIABILITY-date"
+                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-slate-400">Pago
+                                        (Opcional)</label>
+                                    <input type="date" id="new-LIABILITY-due"
+                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <input type="number" id="new-LIABILITY-init"
+                                    placeholder="Monto deuda inicial (Opcional)"
+                                    class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            </div>
+                            <button onclick="app.handleCreateAccount('LIABILITY')"
+                            class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                        </div>
+                        <div id="crud-list-LIABILITY" class="space-y-2 text-sm"></div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-200">Presupuesto (Buckets)</h3>
+                        <div class="flex gap-2">
+                            <button onclick="ui.openBucketTransferModal()"
+                                class="text-xs text-blue-300 font-medium bg-slate-800/80 px-2 py-1 rounded hover:bg-slate-800/75 transition backdrop-blur-sm hover:backdrop-blur-md">
+                                <i class="fas fa-exchange-alt mr-1"></i> Mover
+                            </button>
+                            <button onclick="ui.toggleManager('BUCKET')"
+                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                            <button onclick="ui.toggleManager('BUCKET')"
+                                class="text-xs text-indigo-400 font-medium bg-slate-800/80 px-2 py-1 rounded backdrop-blur-sm hover:backdrop-blur-md transition">Gestionar</button>
+                        </div>
+                    </div>
+                    <div id="buckets-list" class="grid grid-cols-2 gap-3"></div>
+                    <div id="manage-BUCKET"
+                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nuevo Bucket</h4>
+                            <input type="text" id="new-BUCKET-name" placeholder="Categoría"
+                                class="w-full p-2 border rounded text-sm mb-2 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            <input type="number" id="new-BUCKET-init" placeholder="Fondo Inicial (Opcional)"
+                                class="w-full p-2 border rounded text-sm mb-2 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+
+                            <button onclick="app.handleCreateBucket()"
+                                class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                        </div>
+                        <div id="crud-list-BUCKET" class="space-y-2 text-sm"></div>
+                    </div>
+                </section>
+                <div class="h-24"></div>
+            </div>
+
+            <!-- VISTA 2: MOVIMIENTOS -->
+            <div id="view-transactions" class="space-y-4 hidden animate-fade-in h-full">
+                <!-- Header Sticky -->
+                <div class="flex items-center justify-between mb-4 sticky top-0 bg-slate-800-bg z-10 py-2">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-indigo-600 w-1 h-6 rounded-r"></div>
+                        <h3 class="text-xl font-bold text-slate-700 dark:text-slate-200">Historial</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <span id="filtered-total"
+                            class="text-xs font-mono font-bold text-slate-300 bg-slate-800/50 px-2 py-1 rounded-lg"></span>
+                        <button onclick="ui.toggleFilters()"
+                            class="text-xs bg-slate-800/80 text-indigo-300 px-3 py-1 rounded-full font-medium hover:bg-slate-800/75 transition backdrop-blur-sm hover:backdrop-blur-md">
+                            <i class="fas fa-filter mr-1"></i> Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANEL DE FILTROS -->
+                <div id="filter-panel"
+                    class="hidden bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-sm border border-slate-700 p-4 mb-4 space-y-3">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="filter-search" oninput="ui.applyFilters()"
+                            placeholder="Buscar descripción..."
+                            class="w-full pl-8 p-2 text-sm border rounded-lg bg-slate-800 border-slate-700 text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Desde</label><input
+                                type="date" id="filter-date-start" onchange="ui.applyFilters()"
+                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                        </div>
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Hasta</label><input
+                                type="date" id="filter-date-end" onchange="ui.applyFilters()"
+                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 justify-between">
+                        <button onclick="ui.setFilterDate('week')"
+                            class="text-[10px] flex-1 bg-slate-800 hover:bg-indigo-900/20 text-slate-300 py-1 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Semana</button>
+                        <button onclick="ui.setFilterDate('fortnight')"
+                            class="text-[10px] flex-1 bg-slate-800 hover:bg-indigo-900/20 text-slate-300 py-1 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Quincena</button>
+                        <button onclick="ui.setFilterDate('month')"
+                            class="text-[10px] flex-1 bg-slate-800 hover:bg-indigo-900/20 text-slate-300 py-1 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Mes</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Tipo</label><select
+                                id="filter-type" onchange="ui.applyFilters()"
+                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                                <option value="ALL">Todos</option>
+                                <option value="INCOME">Ingresos</option>
+                                <option value="EXPENSE">Gastos</option>
+                            </select></div>
+                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Categoría</label><select
+                                id="filter-bucket" onchange="ui.applyFilters()"
+                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                                <option value="ALL">Todas</option>
+                            </select></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="filter-min" oninput="ui.applyFilters()" placeholder="Min $"
+                            class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                        <input type="number" id="filter-max" oninput="ui.applyFilters()" placeholder="Max $"
+                            class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                    </div>
+                    <button onclick="ui.clearFilters()"
+                        class="w-full py-2 text-xs text-rose-500 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Limpiar
+                        Filtros</button>
+                </div>
+
+                <!-- Contenedor de lista -->
+                <div
+                    class="bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-md border border-slate-700 overflow-hidden min-h-[50vh]">
+                    <div id="transactions-list" class="divide-y divide-slate-100 dark:divide-slate-700"></div>
+                </div>
+                <div class="h-20"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- BOTTOM NAV BAR -->
+    <nav <nav
+        class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-700 shadow-lg z-50 pb-safe">
+        <div class="max-w-md mx-auto flex justify-around items-center h-16">
+            <button onclick="ui.switchView('home')" id="nav-btn-home"
+                class="flex flex-col items-center justify-center w-full h-full text-indigo-600 dark:text-indigo-400 transition-colors">
+                <i class="fas fa-home text-xl mb-1"></i>
+            </button>
+            <div class="relative -top-5">
+                <button onclick="ui.openModal('EXPENSE')"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition transform active:scale-95 border-4 border-slate-50 dark:border-dark-bg backdrop-blur-sm hover:backdrop-blur-md">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <button onclick="ui.switchView('transactions')" id="nav-btn-transactions"
+                class="flex flex-col items-center justify-center w-full h-full text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
+                <i class="fas fa-list-ul text-xl mb-1"></i>
+                <span class="text-[10px] font-medium">Movimientos</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODALES -->
+    <div id="transaction-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div <div
+            class="bg-slate-900/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-transform duration-300 border border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-lg font-bold">Registrar</h3>
+                <button onclick="ui.closeModal()" class="text-slate-400 hover:text-slate-600"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <form id="tx-form" onsubmit="app.addTransactionWrapper(event)">
+                <input type="hidden" id="tx-type">
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Monto</label>
+                    <div class="relative">
+                        <span id="modal-currency-symbol"
+                            class="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
+                        <input type="number" id="tx-amount" step="0.01"
+                            class="w-full pl-8 p-3 border border-slate-600 rounded-xl text-xl font-bold bg-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="0.00" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Descripción</label>
+                    <input type="text" id="tx-desc"
+                        class="w-full p-3 border border-slate-600 rounded-xl bg-slate-800 text-slate-100" required>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Cuenta</label>
+                        <select id="tx-account" onchange="ui.updateModalCurrency()"
+                            class="w-full p-2 border rounded-lg bg-slate-800 text-slate-100 text-sm" required></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Bucket</label>
+                        <select id="tx-bucket" class="w-full p-2 border rounded-lg bg-slate-800 text-slate-100 text-sm"
+                            required></select>
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE TRANSFERENCIA -->
+    <div id="transfer-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-blue-600 dark:text-blue-400"><i
+                        class="fas fa-exchange-alt mr-2"></i>Transferencia</h3>
+                <button onclick="document.getElementById('transfer-modal').classList.add('hidden')"
+                    class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.executeTransfer(event)">
+                <div
+                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mb-3 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Desde</label>
+                    <select id="t-source" onchange="ui.calcTransfer()"
+                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                    <div class="mt-2 relative">
+                        <input type="number" id="t-amount" oninput="ui.calcTransfer()" step="0.01"
+                            class="w-full p-2 pl-2 border rounded dark:bg-slate-700/50 dark:text-white bg-slate-800/50"
+                            placeholder="Monto" required>
+                    </div>
+                </div>
+                <div class="flex justify-center -my-5 relative z-10">
+                    <div class="bg-slate-800 dark:bg-slate-600 rounded-full p-2 shadow border dark:border-slate-500"><i
+                            class="fas fa-arrow-down text-slate-400 dark:text-slate-200"></i></div>
+                </div>
+                <div
+                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mt-3 mb-4 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Hacia</label>
+                    <select id="t-target" onchange="ui.calcTransfer()"
+                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                    <div class="mt-2">
+                        <p class="text-xs text-slate-400">Recibirás:</p>
+                        <p id="t-result" class="text-lg font-bold text-emerald-600 dark:text-emerald-400">0.00</p>
+                        <p id="t-rate-info" class="text-[10px] text-slate-400 italic"></p>
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-600/90 hover:bg-blue-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TRANSFERENCIA DE BUCKETS -->
+    <div id="bucket-transfer-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-indigo-500 dark:text-indigo-400"><i
+                        class="fas fa-exchange-alt mr-2"></i>Mover Presupuesto</h3>
+                <button onclick="document.getElementById('bucket-transfer-modal').classList.add('hidden')"
+                    class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.executeBucketTransfer(event)">
+                <div
+                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mb-3 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Sacar de:</label>
+                    <select id="bt-source"
+                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                </div>
+                <div class="flex justify-center -my-5 relative z-10">
+                    <div class="bg-slate-800 dark:bg-slate-600 rounded-full p-2 shadow border dark:border-slate-500"><i
+                            class="fas fa-arrow-down text-slate-400 dark:text-slate-200"></i></div>
+                </div>
+                <div
+                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mt-3 mb-4 border border-slate-100 dark:border-slate-700">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Mover a:</label>
+                    <select id="bt-target"
+                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Monto a mover</label>
+                    <input type="number" id="bt-amount" step="0.01"
+                        class="w-full p-3 border border-slate-600 rounded-xl text-xl font-bold bg-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="0.00" required>
+                </div>
+                <button type="submit"
+                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar
+                    Movimiento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR CUENTA -->
+    <div id="edit-account-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="edit-account-title" class="text-lg font-bold text-indigo-500 dark:text-indigo-400"><i
+                        class="fas fa-edit mr-2"></i>Editar Cuenta</h3>
+                <button onclick="document.getElementById('edit-account-modal').classList.add('hidden')"
+                    class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.updateAccountWrapper(event)">
+                <input type="hidden" id="edit-account-id">
+                <input type="hidden" id="edit-account-type">
+                <div class="mb-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Nombre</label>
+                    <input type="text" id="edit-account-name"
+                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100" required>
+                </div>
+                <div class="mb-3">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Moneda</label>
+                    <select id="edit-account-currency"
+                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                        <option value="USD">USD</option>
+                        <option value="VES">VES</option>
+                        <option value="USDT">USDT</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Saldo</label>
+                    <input type="number" id="edit-account-balance" step="0.01"
+                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Inicio</label>
+                        <input type="date" id="edit-account-start"
+                            class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Vencimiento</label>
+                        <input type="date" id="edit-account-due"
+                            class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-bold py-3 rounded-xl shadow-lg">Guardar
+                    cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR BUCKET -->
+    <div id="edit-bucket-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-indigo-500 dark:text-indigo-400"><i
+                        class="fas fa-edit mr-2"></i>Editar Bucket</h3>
+                <button onclick="document.getElementById('edit-bucket-modal').classList.add('hidden')"
+                    class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.updateBucketWrapper(event)">
+                <input type="hidden" id="edit-bucket-id">
+                <div class="mb-3">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Nombre</label>
+                    <input type="text" id="edit-bucket-name"
+                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100" required>
+                </div>
+                <div class="mb-3">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Saldo</label>
+                    <input type="number" id="edit-bucket-balance" step="0.01"
+                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                </div>
+                <button type="submit"
+                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-bold py-3 rounded-xl shadow-lg">Guardar
+                    cambios</button>
+            </form>
+        </div>
+    </div>
+    <!-- MODAL MENSAJE -->
+    <div id="message-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="message-title" class="text-lg font-bold text-white dark:text-white">Aviso</h3>
+                <button onclick="ui.hideMessageModal()" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="message-text" class="mb-4 text-white dark:text-slate-200"></p>
+            <div class="flex justify-end">
+                <button onclick="ui.hideMessageModal()"
+                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-bold py-3 rounded-xl shadow-lg">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN -->
+    <div id="confirm-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="confirm-title" class="text-lg font-bold text-white dark:text-white">Confirmar</h3>
+                <button onclick="ui.hideConfirmModal()" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="confirm-text" class="mb-4 text-white dark:text-slate-200">¿Está seguro?</p>
+            <div class="flex justify-end gap-2">
+                <button onclick="ui.hideConfirmModal()"
+                    class="px-4 py-2 bg-rose-100 text-rose-700 rounded-md hover:bg-rose-200 backdrop-blur-sm hover:backdrop-blur-md">Cancelar</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 bg-indigo-600/90 text-white rounded-md backdrop-blur-sm hover:backdrop-blur-md transition">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LIQUIDAR -->
+    <div id="settle-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="settle-title" class="text-lg font-bold text-white dark:text-white">Registrar Pago</h3>
+                <button onclick="document.getElementById('settle-modal').classList.add('hidden')"
+                    class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="app.executeSettle(event)">
+                <input type="hidden" id="settle-id">
+                <input type="hidden" id="settle-type">
+
+                <div class="bg-slate-800/50 p-4 rounded-xl mb-4 text-center border border-slate-700">
+                    <p class="text-xs text-slate-500 uppercase mb-1" id="settle-label-account">Cuenta</p>
+                    <p class="text-xl font-bold text-white dark:text-white" id="settle-account-name">---</p>
+                    <p class="text-sm font-mono text-slate-500" id="settle-account-balance">---</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-500 mb-1" id="settle-label-amount">Monto a
+                        Liquidar</label>
+                    <input type="number" id="settle-amount" step="0.01"
+                        class="w-full p-3 border border-slate-600 rounded-xl text-xl font-bold bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        required>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-xs font-medium text-slate-500 mb-1" id="settle-label-source">Origen de
+                        Fondos</label>
+                    <select id="settle-source"
+                        class="w-full p-3 border border-slate-600 rounded-xl bg-slate-800 text-slate-100 text-sm"
+                        required></select>
+                </div>
+
+                <button type="submit" id="settle-btn"
+                    class="w-full bg-emerald-600/90 hover:bg-emerald-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script src="js/Database.js"></script>
+    <script src="js/FinanceManager.js"></script>
+    <script src="js/UIManager.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
