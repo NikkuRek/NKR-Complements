@@ -27,16 +27,29 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/buckets/:b_id
+// PUT /api/buckets/:b_id
 router.put('/:b_id', async (req, res) => {
   try {
     const { b_id } = req.params;
     const { name, balance } = req.body;
-    await pool.query(
-      'UPDATE buckets SET name = ?, balance = ? WHERE id = ?',
-      [name, balance, b_id]
-    );
+
+    const fields = [];
+    const values = [];
+
+    if (name !== undefined) { fields.push('name = ?'); values.push(name); }
+    if (balance !== undefined) { fields.push('balance = ?'); values.push(balance); }
+
+    if (fields.length === 0) {
+      return res.json({ updated: false, message: 'No fields provided' });
+    }
+
+    values.push(b_id);
+    const sql = `UPDATE buckets SET ${fields.join(', ')} WHERE id = ?`;
+
+    await pool.query(sql, values);
     res.json({ updated: true });
   } catch (error) {
+    console.error('Update Bucket Error:', error);
     res.status(500).json({ error: error.message });
   }
 });

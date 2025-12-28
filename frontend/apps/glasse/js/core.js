@@ -1,80 +1,55 @@
-/* glasse.js — class-based refactor to match denarius.js structure */
+/* glasse.js — Refactored to use Database class */
 
 class Glasse {
-    constructor(storageKey = 'cake_inventory_history_v1') {
-        this.storageKey = storageKey;
-        this.onUpdate = null; // UI can assign a callback
-
-        this.initialData = {
-            inventory: [
-                { id: 1, name: 'Chocolate', totalStock: 6, reservations: [{ id: 'res-init-1', customerName: 'Eismel', date: new Date().toISOString() }], credits: [], imageColor: 'bg-amber-800' },
-                { id: 2, name: 'Torta Quesillo', totalStock: 3, reservations: [], credits: [], imageColor: 'bg-yellow-400' },
-                { id: 3, name: 'Marquesa', totalStock: 2, reservations: [], credits: [], imageColor: 'bg-orange-200' }
-            ],
-            history: []
-        };
-
-        this.data = this.load();
+    constructor(db) {
+        this.db = db;
+        this.onUpdate = null;
         this.currentView = 'inventory';
     }
 
-    load() {
-        const raw = localStorage.getItem(this.storageKey);
-        if (!raw) return JSON.parse(JSON.stringify(this.initialData));
-        try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return { inventory: parsed, history: [] };
-            return parsed;
-        } catch (e) {
-            return JSON.parse(JSON.stringify(this.initialData));
-        }
-    }
-
-    async save() {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+    // --- CRUD helpers for products ---
+    async createProduct(name, initialStock = 0, imageColor = 'bg-pink-500') {
+        const payload = { name, stock: initialStock, imageColor };
+        await this.db.createCake(payload);
         if (this.onUpdate) this.onUpdate();
     }
 
-    reset() {
-        this.data = JSON.parse(JSON.stringify(this.initialData));
-        this.save();
-    }
-
-    // --- CRUD helpers for products (accounts/buckets analog) ---
-    async createProduct(name, initialStock = 0, imageColor = 'bg-pink-500') {
-        const product = { id: Date.now(), name, totalStock: initialStock, reservations: [], credits: [], imageColor };
-        this.data.inventory.push(product);
-        await this.save();
-        return product;
-    }
-
     async deleteProduct(id) {
-        this.data.inventory = this.data.inventory.filter(p => p.id !== id);
-        await this.save();
+        await this.db.deleteCake(id);
+        if (this.onUpdate) this.onUpdate();
     }
 
     async updateProduct(id, values) {
-        const p = this.data.inventory.find(x => x.id === id);
-        if (!p) return;
-        Object.assign(p, values);
-        await this.save();
+        // values keys might differ from DB keys? 
+        // core.js calls: updateProduct(id, values) -> usually not called from UI directly, maybe I don't need this wrapper
+        await this.db.updateCake(id, values);
+        if (this.onUpdate) this.onUpdate();
     }
 
-    // --- History helper ---
-    addToHistory(type, cakeName, clientName, amount = 1) {
-        this.data.history.unshift({ id: Date.now(), date: new Date().toISOString(), type, cakeName, clientName: clientName || '-', amount });
-        if (this.data.history.length > 50) this.data.history.pop();
-    }
-
-    // --- Business logic (kept method names for compatibility with HTML) ---
+    // --- Business logic ---
     async directSale(id) {
-        const cake = this.data.inventory.find(c => c.id === id);
+        const cake = this.db.data.cakes.find(c => c.id === String(id));
         if (!cake) return;
-        const available = cake.totalStock - (cake.reservations?.length || 0);
+
+        const available = cake.stock - (cake.reservations?.length || 0);
         if (available > 0) {
-            cake.totalStock--;
-            this.addToHistory('sale', cake.name, 'Venta de Mostrador');
-            await this.save();
+            // calculated new stock
+            const newStock = cake.stock - 1;
+
+            // 1. Update Cake
+            await this.db.updateCake(cake.id, { stock: newStock });
+
+            // 2. Add History
+            await this.db.addHistory({
+                cake_id: cake.id,
+                type: 'sale',
+                amount: 1,
+                clientName: 'Venta de Mostrador',
+                description: 'Venta directa',
+                date: new Date().toISOString()
+            });
+
+            if (this.onUpdate) this.onUpdate();
         }
     }
 
@@ -83,12 +58,20 @@ class Glasse {
         if (!input) return;
         const name = input.value.trim();
         if (!name) return alert('Por favor escribe un nombre');
-        const cake = this.data.inventory.find(c => c.id === id);
-        const available = cake.totalStock - (cake.reservations?.length || 0);
+
+        const cake = this.db.data.cakes.find(c => c.id === String(id));
+        const available = cake.stock - (cake.reservations?.length || 0);
+
         if (available > 0) {
-            cake.reservations.push({ id: Date.now().toString(), customerName: name, date: new Date().toISOString() });
+            // Don't reduce stock logic yet? Or does reservation reduce available but not stock?
+            // "available = stock - reservations". So stock stays same.
+
+            const newRes = [...(cake.reservations || []), { id: Date.now().toString(), customerName: name, date: new Date().toISOString() }];
+
+            await this.db.updateCake(cake.id, { reservations: newRes });
+
             input.value = '';
-            await this.save();
+            if (this.onUpdate) this.onUpdate();
         }
     }
 
@@ -97,54 +80,102 @@ class Glasse {
         if (!input) return;
         const name = input.value.trim();
         if (!name) return alert('Por favor escribe un nombre para el fiado');
-        const cake = this.data.inventory.find(c => c.id === id);
-        const available = cake.totalStock - (cake.reservations?.length || 0);
+
+        const cake = this.db.data.cakes.find(c => c.id === String(id));
+        const available = cake.stock - (cake.reservations?.length || 0);
+
         if (available > 0) {
-            cake.totalStock--;
-            if (!cake.credits) cake.credits = [];
-            cake.credits.push({ id: Date.now().toString(), customerName: name, date: new Date().toISOString() });
+            // Credit reduces stock because it's taken
+            const newStock = cake.stock - 1;
+            const newCredits = [...(cake.credits || []), { id: Date.now().toString(), customerName: name, date: new Date().toISOString() }];
+
+            await this.db.updateCake(cake.id, { stock: newStock, credits: newCredits });
+
+            await this.db.addHistory({
+                cake_id: cake.id,
+                type: 'credit',
+                amount: 1,
+                clientName: name,
+                description: 'Venta a crédito',
+                date: new Date().toISOString()
+            });
+
             input.value = '';
-            this.addToHistory('credit', cake.name, name);
-            await this.save();
+            if (this.onUpdate) this.onUpdate();
         }
     }
 
     async completeReservation(cakeId, resId) {
-        const cake = this.data.inventory.find(c => c.id === cakeId);
-        const res = cake?.reservations?.find(r => r.id === resId);
+        const cake = this.db.data.cakes.find(c => c.id === String(cakeId));
+        if (!cake) return;
+
+        const res = cake.reservations?.find(r => r.id === resId);
         if (res) {
-            cake.totalStock--;
-            cake.reservations = cake.reservations.filter(r => r.id !== resId);
-            this.addToHistory('reservation_done', cake.name, res.customerName);
-            await this.save();
+            // Delivered -> remove from reservation, reduce stock
+            const newRes = cake.reservations.filter(r => r.id !== resId);
+            const newStock = cake.stock - 1;
+
+            await this.db.updateCake(cake.id, { stock: newStock, reservations: newRes });
+
+            await this.db.addHistory({
+                cake_id: cake.id,
+                type: 'reservation_done',
+                amount: 1,
+                clientName: res.customerName,
+                description: 'Entrega de reserva',
+                date: new Date().toISOString()
+            });
+
+            if (this.onUpdate) this.onUpdate();
         }
     }
 
     async settleCredit(cakeId, creditId) {
-        const cake = this.data.inventory.find(c => c.id === cakeId);
-        const credit = cake?.credits?.find(c => c.id === creditId);
+        const cake = this.db.data.cakes.find(c => c.id === String(cakeId));
+        if (!cake) return;
+
+        const credit = cake.credits?.find(c => c.id === creditId);
         if (credit) {
-            cake.credits = cake.credits.filter(c => c.id !== creditId);
-            this.addToHistory('paid', cake.name, credit.customerName);
-            await this.save();
+            // Paid -> remove from credits (stock already reduced)
+            const newCredits = cake.credits.filter(c => c.id !== creditId);
+
+            await this.db.updateCake(cake.id, { credits: newCredits });
+
+            await this.db.addHistory({
+                cake_id: cake.id,
+                type: 'paid',
+                amount: 1, // amount paid is 1 cake value equivalent? Or just record event.
+                clientName: credit.customerName,
+                description: 'Pago de deuda',
+                date: new Date().toISOString()
+            });
+
+            if (this.onUpdate) this.onUpdate();
         }
     }
 
     async cancelReservation(cakeId, resId) {
-        const cake = this.data.inventory.find(c => c.id === cakeId);
+        const cake = this.db.data.cakes.find(c => c.id === String(cakeId));
         if (!cake) return;
-        cake.reservations = cake.reservations.filter(r => r.id !== resId);
-        await this.save();
+        // Cancel -> remove from reservations, stock stays same (as it wasn't reduced yet, only available wa)
+        const newRes = cake.reservations.filter(r => r.id !== resId);
+        await this.db.updateCake(cake.id, { reservations: newRes });
+        if (this.onUpdate) this.onUpdate();
     }
 
     async addStock(id) {
-        const cake = this.data.inventory.find(c => c.id === id);
+        const cake = this.db.data.cakes.find(c => c.id === String(id));
         if (!cake) return;
-        cake.totalStock++;
-        await this.save();
+
+        const newStock = cake.stock + 1;
+        await this.db.updateCake(cake.id, { stock: newStock });
+
+        // Optionally add history for restocking?
+        // await this.db.addHistory({ ... type: 'restock' ... })
+        if (this.onUpdate) this.onUpdate();
     }
 
-    // --- View helpers (rendering handled by UIManager) ---
+    // --- View helpers ---
     switchView(viewName) {
         this.currentView = viewName;
         const tabInv = document.getElementById('tab-inventory');
@@ -165,13 +196,6 @@ class Glasse {
             if (tabInv) tabInv.className = `flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${inactiveClass}`;
             if (tabHis) tabHis.className = `flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeClass}`;
         }
-        // Notify UI to re-render if needed
-        if (this.onUpdate) this.onUpdate();
-    }
-
-    // Minimal init to trigger first render by UIManager
-    init() {
-        this.data = this.load();
         if (this.onUpdate) this.onUpdate();
     }
 
@@ -181,15 +205,16 @@ class Glasse {
         const count = document.getElementById('history-count');
         if (!list || !empty || !count) return;
 
-        count.innerText = `${this.data.history.length} registros`;
-        if (this.data.history.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); empty.classList.add('flex'); return; }
+        const history = this.db.data.history;
+        count.innerText = `${history.length} registros`;
+        if (history.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); empty.classList.add('flex'); return; }
         empty.classList.add('hidden'); empty.classList.remove('flex');
 
-        list.innerHTML = this.data.history.map(item => {
+        list.innerHTML = history.map(item => {
             let icon, colorClass, label;
             const date = new Date(item.date).toLocaleDateString('es-VE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-            switch(item.type) {
+            switch (item.type) {
                 case 'sale': icon = 'shopping-bag'; colorClass = 'bg-green-800 text-green-200'; label = 'Venta Efectivo'; break;
                 case 'credit': icon = 'notebook-pen'; colorClass = 'bg-red-800 text-red-200'; label = 'Fiado (Crédito)'; break;
                 case 'reservation_done': icon = 'calendar-check'; colorClass = 'bg-blue-800 text-blue-200'; label = 'Reserva Entregada'; break;
@@ -205,7 +230,7 @@ class Glasse {
                         </div>
                         <div>
                             <p class="font-bold text-slate-100 text-sm">${label}</p>
-                            <p class="text-xs text-slate-400">${item.cakeName} <span class="mx-1">•</span> ${item.clientName}</p>
+                            <p class="text-xs text-slate-400">${item.cakeName || 'Torta'} <span class="mx-1">•</span> ${item.clientName || '-'}</p>
                         </div>
                     </div>
                     <div class="text-right">
@@ -221,9 +246,17 @@ class Glasse {
         const dashboard = document.getElementById('dashboard');
         if (!inventoryList || !dashboard) return;
 
-        const totalStock = this.data.inventory.reduce((acc, item) => acc + item.totalStock, 0);
-        const totalRes = this.data.inventory.reduce((acc, item) => acc + (item.reservations ? item.reservations.length : 0), 0);
-        const totalFree = this.data.inventory.reduce((acc, item) => acc + (item.totalStock - (item.reservations ? item.reservations.length : 0)), 0);
+        const cakes = this.db.data.cakes;
+
+        const totalStock = cakes.reduce((acc, item) => acc + (item.stock || 0), 0);
+        const totalRes = cakes.reduce((acc, item) => acc + (item.reservations ? item.reservations.length : 0), 0);
+        // Free = Stock - Reservations? 
+        // Logic check: Reservations are cakes put aside. 
+        // If system is: "I have 10 cakes. I reserve 2." 
+        // Do I have 8 on shelf + 2 reserved? Or 10 total, and available to sell is 8?
+        // Code at L73 says: `available = cake.totalStock - reservations.length`.
+        // So `totalStock` is physical count.
+        const totalFree = cakes.reduce((acc, item) => acc + ((item.stock || 0) - (item.reservations ? item.reservations.length : 0)), 0);
 
         dashboard.innerHTML = `
             <div class="bg-slate-800/50 backdrop-blur-sm p-3 rounded-xl border border-slate-700 text-center">
@@ -241,13 +274,13 @@ class Glasse {
         `;
 
         inventoryList.innerHTML = '';
-        
-        this.data.inventory.forEach(cake => {
+
+        cakes.forEach(cake => {
             const reservations = cake.reservations || [];
             const credits = cake.credits || [];
-            const available = cake.totalStock - reservations.length;
-            const isOutOfStock = cake.totalStock === 0;
-            
+            const available = (cake.stock || 0) - reservations.length;
+            const isOutOfStock = (cake.stock || 0) === 0;
+
             const disabledClass = (available <= 0) ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : '';
             const sellClass = (available > 0) ? 'bg-indigo-600 text-white shadow-lg active:scale-95 hover:bg-indigo-700' : disabledClass;
             const actionBtnClass = (available > 0) ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-700 text-slate-500';
@@ -299,7 +332,7 @@ class Glasse {
                             <div>
                                 <h2 class="font-bold text-lg text-slate-800">${cake.name}</h2>
                                 <div class="flex gap-2 text-sm">
-                                    <span class="font-medium text-slate-600">Físicas: ${cake.totalStock}</span>
+                                    <span class="font-medium text-slate-600">Físicas: ${cake.stock || 0}</span>
                                     ${available > 0 ? `<span class="text-green-600 font-bold">(${available} libres)</span>` : ''}
                                     ${isOutOfStock ? `<span class="text-red-500 font-bold">(Agotadas)</span>` : ''}
                                 </div>
@@ -324,9 +357,8 @@ class Glasse {
                 </div>`;
             inventoryList.insertAdjacentHTML('beforeend', cardHtml);
         });
+
+        // Refresh icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 }
-
-const app = new Glasse();
-app.init?.();
-window.app = app;

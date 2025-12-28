@@ -56,22 +56,35 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/transactions/:tx_id
+// PUT /api/transactions/:tx_id
 router.put('/:tx_id', async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
     const { tx_id } = req.params;
-    const { date, amount, type, account_id, bucket_id, source_bucket_id, description } = req.body;
-    const tx_date = date ? new Date(date) : new Date();
+    const body = req.body;
 
     const [rows] = await connection.query('SELECT * FROM transactions WHERE id = ?', [tx_id]);
     const oldTx = rows[0];
 
     if (!oldTx) {
+      await connection.rollback();
       return res.status(404).json({ message: 'Transaction not found' });
     }
 
-    // Revert old transaction
+    // Merge old data with new data (handle partial updates)
+    // Note: if body has explicit null, we accept it. If undefined, we keep old.
+    const date = body.date !== undefined ? body.date : oldTx.date;
+    const amount = body.amount !== undefined ? body.amount : oldTx.amount;
+    const type = body.type !== undefined ? body.type : oldTx.type;
+    const account_id = body.account_id !== undefined ? body.account_id : oldTx.account_id;
+    const bucket_id = body.bucket_id !== undefined ? body.bucket_id : oldTx.bucket_id;
+    const source_bucket_id = body.source_bucket_id !== undefined ? body.source_bucket_id : oldTx.source_bucket_id;
+    const description = body.description !== undefined ? body.description : oldTx.description;
+
+    const tx_date = date ? new Date(date) : new Date();
+
+    // Revert old transaction logic (using oldTx values)
     if (oldTx.account_id) {
       if (oldTx.type === 'income') {
         await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [oldTx.amount, oldTx.account_id]);
@@ -90,13 +103,13 @@ router.put('/:tx_id', async (req, res) => {
       await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [oldTx.amount, oldTx.source_bucket_id]);
     }
 
-    // Update transaction
+    // Update transaction record
     await connection.query(
       'UPDATE transactions SET date = ?, amount = ?, type = ?, account_id = ?, bucket_id = ?, source_bucket_id = ?, description = ? WHERE id = ?',
       [tx_date, amount, type, account_id, bucket_id, source_bucket_id, description, tx_id]
     );
 
-    // Apply new transaction
+    // Apply new transaction logic (using merged values)
     if (account_id) {
       if (type === 'income') {
         await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, account_id]);
@@ -119,6 +132,7 @@ router.put('/:tx_id', async (req, res) => {
     res.json({ updated: true });
   } catch (error) {
     await connection.rollback();
+    console.error('Update Transaction Error:', error);
     res.status(500).json({ error: error.message });
   } finally {
     connection.release();

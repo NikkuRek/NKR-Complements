@@ -5,11 +5,7 @@ class denarius {
         this.onUpdate = null; // Callback for updates
     }
 
-    async _save() {
-        // Keep legacy local save as fallback
-        await this.db.save(this.data);
-        if (this.onUpdate) this.onUpdate();
-    }
+
 
     async createAccount(name, type, currency, initialBalance = 0, startDate = null, dueDate = null) {
         const payload = { name, type, currency, balance: 0, start_date: startDate || null, due_date: dueDate || null };
@@ -197,7 +193,50 @@ class denarius {
         const equity = assets + receivables - liabilities;
         return { assets, liabilities, receivables, equity };
     }
-    resetData() { this.db.reset(); location.reload(); }
+
+    async addWishlistItem() {
+        const product_name = document.getElementById('wish-product-name').value;
+        const price = parseFloat(document.getElementById('wish-price').value);
+        const currency = document.getElementById('wish-currency').value;
+        const details = document.getElementById('wish-details').value;
+
+        if (!product_name || !price) {
+            ui.showMessageModal('Error', 'El nombre y el precio son obligatorios.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.db.baseUrl}/wishlist`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_name, price, currency, details })
+            });
+            if (!response.ok) throw new Error('Error al guardar el artículo');
+
+            document.getElementById('wish-product-name').value = '';
+            document.getElementById('wish-price').value = '';
+            document.getElementById('wish-currency').value = 'USD';
+            document.getElementById('wish-details').value = '';
+            ui.toggleWishlistForm(false);
+
+            ui.renderWishlist();
+        } catch (error) {
+            ui.showMessageModal('Error', error.message);
+        }
+    }
+
+    async deleteWishlistItem(id) {
+        try {
+            const response = await fetch(`${this.db.baseUrl}/wishlist/${id}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) throw new Error('Error al eliminar el artículo');
+            ui.renderWishlist();
+        } catch (error) {
+            ui.showMessageModal('Error', error.message);
+        }
+    }
+
     filterTransactions(filters) {
         return this.data.transactions.filter(tx => {
             if (filters.search && !tx.description.toLowerCase().includes(filters.search.toLowerCase())) return false;

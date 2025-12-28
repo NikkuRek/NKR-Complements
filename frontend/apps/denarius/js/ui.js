@@ -1,39 +1,62 @@
 const ui = {
     currentView: 'home',
     init: () => {
-        const savedCurr = localStorage.getItem('currency') || 'USD';
+        const savedCurr = 'USD';
         document.getElementById('currency-select').value = savedCurr;
-        document.getElementById('rate-usd').value = localStorage.getItem('rate_USD') || 40;
-        document.getElementById('rate-usdt').value = localStorage.getItem('rate_USDT') || 40;
-        // If there's no saved USD/USDT rate, fetch them automatically
-        if (!localStorage.getItem('rate_USD')) ui.fetchUsdOfficial();
-        if (!localStorage.getItem('rate_USDT')) ui.fetchUsdtParalelo();
+        // Default rates
+        document.getElementById('rate-usd').value = 40;
+        document.getElementById('rate-usdt').value = 40;
+
+        // Fetch rates automatically
+        ui.fetchUsdOfficial();
+        ui.fetchUsdtParalelo();
+
         ui.renderAll();
         ui.switchView('home');
     },
     switchView: (viewName) => {
         ui.currentView = viewName;
-        const homeView = document.getElementById('view-home');
-        const txView = document.getElementById('view-transactions');
-        const btnHome = document.getElementById('nav-btn-home');
-        const btnTx = document.getElementById('nav-btn-transactions');
+        const views = ['home', 'transactions', 'calculator', 'wishlist'];
+        const navButtons = {
+            'home': 'nav-btn-home',
+            'transactions': 'nav-btn-transactions',
+            'calculator': 'nav-btn-calculator',
+            'wishlist': 'nav-btn-wishlist'
+        };
 
-        if (viewName === 'home') {
-            homeView.classList.remove('hidden');
-            txView.classList.add('hidden');
-            btnHome.className = "flex flex-col items-center justify-center w-full h-full text-indigo-600 dark:text-indigo-400 font-bold transition-colors";
-            btnTx.className = "flex flex-col items-center justify-center w-full h-full text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors";
-        } else {
-            homeView.classList.add('hidden');
-            txView.classList.remove('hidden');
-            btnTx.className = "flex flex-col items-center justify-center w-full h-full text-indigo-600 dark:text-indigo-400 font-bold transition-colors";
-            btnHome.className = "flex flex-col items-center justify-center w-full h-full text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors";
+        views.forEach(view => {
+            const el = document.getElementById(`view-${view}`);
+            if (el) {
+                el.classList.toggle('hidden', view !== viewName);
+            }
+        });
+
+        Object.values(navButtons).forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.classList.remove('text-indigo-400', 'font-bold');
+                btn.classList.add('text-slate-500');
+            }
+        });
+
+        const activeBtn = document.getElementById(navButtons[viewName]);
+        if (activeBtn) {
+            activeBtn.classList.add('text-indigo-400', 'font-bold');
+            activeBtn.classList.remove('text-slate-500');
+        }
+
+        // Special actions for specific views
+        if (viewName === 'transactions') {
             ui.populateFilterSelects();
             ui.applyFilters();
+        } else if (viewName === 'wishlist') {
+            ui.renderWishlist();
+        } else if (viewName === 'calculator') {
+            ui.runCalculator();
         }
     },
-    setCurrency: (v) => { localStorage.setItem('currency', v); ui.renderAll(); },
-    setRate: (type, val) => { localStorage.setItem('rate_' + type, val); ui.renderAll(); },
+    setCurrency: (v) => { ui.renderAll(); },
+    setRate: (type, val) => { ui.renderAll(); },
     fetchUsdOfficial: async () => {
         const btn = document.getElementById('rate-usd-btn');
         let oldText = '';
@@ -75,8 +98,141 @@ const ui = {
         }
     },
 
+    formatCurrency: (amount, currency) => {
+        const symbols = { 'USD': '$', 'VES': 'Bs.', 'USDT': '₮' };
+        let formatted = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+        return `${symbols[currency] || '$'} ${formatted}`;
+    },
+
+    getRates: () => {
+        const rateUSD = parseFloat(document.getElementById('rate-usd').value) || 1;
+        const rateUSDT = parseFloat(document.getElementById('rate-usdt').value) || 1;
+        return { USD: rateUSD, USDT: rateUSDT };
+    },
+
+    runCalculator: () => {
+        const amount = parseFloat(document.getElementById('calc-amount').value) || 0;
+        const from = document.getElementById('calc-from').value;
+        const to = document.getElementById('calc-to').value;
+        const rates = ui.getRates();
+        const resultEl = document.getElementById('calc-result');
+        const rateInfoEl = document.getElementById('calc-rate-info');
+
+        if (amount === 0) {
+            resultEl.innerText = '0.00';
+            rateInfoEl.innerText = '';
+            return;
+        }
+
+        let result = 0;
+        let rateInfo = '';
+
+        if (from === to) {
+            result = amount;
+            rateInfo = '1:1';
+        } else {
+            // Convert 'from' amount to a base currency (USD)
+            let amountInUSD;
+            if (from === 'USD') amountInUSD = amount;
+            else if (from === 'VES') amountInUSD = amount / rates.USD;
+            else if (from === 'USDT') amountInUSD = amount * rates.USDT / rates.USD;
+
+            // Convert from base (USD) to 'to' currency
+            if (to === 'USD') {
+                result = amountInUSD;
+                rateInfo = `Tasa base`;
+            } else if (to === 'VES') {
+                result = amountInUSD * rates.USD;
+                rateInfo = `1 USD = ${rates.USD.toFixed(2)} VES`;
+            } else if (to === 'USDT') {
+                result = amountInUSD * rates.USD / rates.USDT;
+                rateInfo = `1 USD = ${(rates.USD / rates.USDT).toFixed(4)} USDT`;
+            }
+        }
+
+        resultEl.innerText = result.toFixed(2);
+        rateInfoEl.innerText = rateInfo;
+    },
+
+    refreshRatesAndCalculate: async () => {
+        const btn = document.querySelector('#view-calculator button i.fa-sync-alt');
+        if(btn) btn.classList.add('animate-spin');
+
+        try {
+            await Promise.all([
+                ui.fetchUsdOfficial(),
+                ui.fetchUsdtParalelo()
+            ]);
+            ui.runCalculator();
+        } catch (error) {
+            console.error('Error refreshing rates:', error);
+            ui.showAlert('No se pudieron actualizar las tasas.');
+        } finally {
+            if(btn) btn.classList.remove('animate-spin');
+        }
+    },
+
+    swapCalculatorCurrencies: () => {
+        const fromSelect = document.getElementById('calc-from');
+        const toSelect = document.getElementById('calc-to');
+        const temp = fromSelect.value;
+        fromSelect.value = toSelect.value;
+        toSelect.value = temp;
+        ui.runCalculator();
+    },
+    
+    toggleWishlistForm: (force) => {
+        const container = document.getElementById('wishlist-form-container');
+        if (typeof force === 'boolean') {
+            container.classList.toggle('hidden', !force);
+        } else {
+            container.classList.toggle('hidden');
+        }
+    },
+
+    renderWishlist: async () => {
+        const container = document.getElementById('wishlist-items');
+        const rates = ui.getRates();
+
+        try {
+            const response = await fetch(`${app.db.baseUrl}/wishlist`);
+            if (!response.ok) throw new Error('Error al cargar la wishlist');
+            const wishlist = await response.json();
+
+            if (wishlist.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-500">No hay artículos en tu wishlist.</div>`;
+                return;
+            }
+
+            container.innerHTML = wishlist.map(item => {
+                let priceInVes = '';
+                if (item.currency === 'USD') {
+                    priceInVes = `<p class="text-xs text-slate-400">Bs. ${(item.price * rates.USD).toFixed(2)}</p>`;
+                } else if (item.currency === 'USDT') {
+                    priceInVes = `<p class="text-xs text-slate-400">Bs. ${(item.price * rates.USDT).toFixed(2)}</p>`;
+                }
+
+                return `
+                    <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-slate-200">${item.product_name}</p>
+                                <p class="text-sm font-mono font-bold text-indigo-400">${ui.formatCurrency(item.price, item.currency)}</p>
+                                ${priceInVes}
+                                <p class="text-xs text-slate-400 mt-1">${item.details || ''}</p>
+                            </div>
+                            <button onclick="app.deleteWishlistItem('${item.id}')" class="text-rose-500 hover:text-rose-400"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (error) {
+            container.innerHTML = `<div class="text-center py-8 text-red-500">Error: ${error.message}</div>`;
+        }
+    },
+
     formatMoney: (amount, currency) => {
-        const global = localStorage.getItem('currency') || 'USD';
+        const global = document.getElementById('currency-select')?.value || 'USD';
         const target = currency || global;
         const locale = target === 'VES' ? 'es-VE' : 'en-US';
         let code = target; if (target === 'USDT') code = 'USD';
@@ -235,7 +391,7 @@ const ui = {
     clearFilters: () => { document.getElementById('filter-search').value = ''; document.getElementById('filter-date-start').value = ''; document.getElementById('filter-date-end').value = ''; document.getElementById('filter-type').value = 'ALL'; document.getElementById('filter-bucket').value = 'ALL'; document.getElementById('filter-min').value = ''; document.getElementById('filter-max').value = ''; ui.applyFilters(); },
     applyFilters: () => {
         const filters = { search: document.getElementById('filter-search').value, start: document.getElementById('filter-date-start').value, end: document.getElementById('filter-date-end').value, type: document.getElementById('filter-type').value, bucket: document.getElementById('filter-bucket').value, min: document.getElementById('filter-min').value, max: document.getElementById('filter-max').value };
-        const filteredTx = app.filterTransactions(filters); const globalCurr = localStorage.getItem('currency') || 'USD'; ui.renderTransactions(globalCurr, filteredTx);
+        const filteredTx = app.filterTransactions(filters); const globalCurr = document.getElementById('currency-select')?.value || 'USD'; ui.renderTransactions(globalCurr, filteredTx);
     },
     updateModalCurrency: () => { const accSelect = document.getElementById('tx-account'); const curr = accSelect.options[accSelect.selectedIndex]?.dataset.currency; const symbols = { 'USD': '$', 'VES': 'Bs.', 'USDT': '₮' }; document.getElementById('modal-currency-symbol').innerText = symbols[curr] || '$'; },
     renderTransactions: (globalCurr, transactions = null) => {
@@ -343,7 +499,7 @@ const ui = {
         });
     },
     renderAll: () => {
-        const globalCurr = localStorage.getItem('currency') || 'USD';
+        const globalCurr = document.getElementById('currency-select')?.value || 'USD';
         const rateUSD = parseFloat(document.getElementById('rate-usd').value) || 1;
         const rateUSDT = parseFloat(document.getElementById('rate-usdt').value) || 1;
         const balance = app.getBalanceSheet(globalCurr, rateUSD, rateUSDT);

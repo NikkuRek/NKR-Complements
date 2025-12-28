@@ -32,12 +32,6 @@
                 </i>
                 <span class="text-white">Dena</span><span class="text-indigo-500">rius</span>
             </h1>
-
-            <div class="flex items-center gap-3">
-                <button onclick="app.resetDataWrapper()"
-                    class="text-xs text-red-300 hover:text-red-500 ml-1 p-2 rounded-full hover:bg-red-900/20 transition backdrop-blur-sm hover:backdrop-blur-md"><i
-                        class="fas fa-power-off"></i></button>
-            </div>
         </div>
     </header>
 
@@ -286,7 +280,87 @@
                 <div class="h-24"></div>
             </div>
 
-            <!-- VISTA 2: MOVIMIENTOS -->
+            <!-- VISTA 2: CALCULADORA -->
+            <div id="view-calculator" class="space-y-4 hidden animate-fade-in">
+                <div class="flex items-center gap-2">
+                    <div class="bg-indigo-600 w-1 h-6 rounded-r"></div>
+                    <h3 class="text-xl font-bold text-slate-200">Calculadora de Divisas</h3>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-700 space-y-3">
+                    <div class="grid grid-cols-2 gap-2 items-end">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">De</label>
+                            <select id="calc-from" onchange="ui.runCalculator()" class="w-full p-2 border rounded-lg bg-slate-700 border-slate-600 text-slate-100">
+                                <option value="USD">USD</option>
+                                <option value="VES">VES</option>
+                                <option value="USDT">USDT</option>
+                            </select>
+                        </div>
+                        <div class="relative">
+                             <input type="number" id="calc-amount" oninput="ui.runCalculator()" class="w-full p-2 border rounded-lg text-lg font-bold bg-slate-700 border-slate-600 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center items-center my-2">
+                        <div class="w-full h-px bg-slate-700"></div>
+                        <button onclick="ui.swapCalculatorCurrencies()" class="p-2 rounded-full bg-slate-700 hover:bg-indigo-600 text-slate-300 hover:text-white transition mx-2">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                        <div class="w-full h-px bg-slate-700"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 items-end">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">A</label>
+                            <select id="calc-to" onchange="ui.runCalculator()" class="w-full p-2 border rounded-lg bg-slate-700 border-slate-600 text-slate-100">
+                                <option value="VES">VES</option>
+                                <option value="USD">USD</option>
+                                <option value="USDT">USDT</option>
+                            </select>
+                        </div>
+                        <div>
+                             <p id="calc-result" class="w-full p-2 border rounded-lg text-lg font-bold bg-slate-900/50 border-slate-700 text-emerald-400 text-right">0.00</p>
+                        </div>
+                    </div>
+
+                                        <div class="flex justify-center items-center gap-2 pt-2">
+                        <p id="calc-rate-info" class="text-xs text-slate-500 text-center"></p>
+                        <button onclick="ui.refreshRatesAndCalculate()" class="text-slate-400 hover:text-indigo-400 transition"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA 3: WISHLIST -->
+            <div id="view-wishlist" class="space-y-4 hidden animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-indigo-600 w-1 h-6 rounded-r"></div>
+                        <h3 class="text-xl font-bold text-slate-200">Wishlist</h3>
+                    </div>
+                    <button onclick="ui.toggleWishlistForm()" class="text-xs bg-slate-800/80 text-indigo-300 px-3 py-1 rounded-full font-medium"><i class="fas fa-plus mr-1"></i> Añadir</button>
+                </div>
+
+                <!-- Formulario para añadir item -->
+                <div id="wishlist-form-container" class="hidden bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-700 space-y-3">
+                    <h4 class="text-md font-bold text-slate-300">Nuevo Artículo</h4>
+                    <input type="text" id="wish-product-name" placeholder="Nombre del producto" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="wish-price" placeholder="Precio" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100">
+                        <select id="wish-currency" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100">
+                            <option value="USD">USD</option>
+                            <option value="USDT">USDT</option>
+                            <option value="VES">VES</option>
+                        </select>
+                    </div>
+                    <textarea id="wish-details" placeholder="Detalles" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100" rows="2"></textarea>
+                    <button onclick="app.addWishlistItem()" class="w-full bg-indigo-600/90 text-white py-2 rounded font-medium">Guardar</button>
+                </div>
+
+                <!-- Lista de items -->
+                <div id="wishlist-items" class="space-y-3"></div>
+            </div>
+
+            <!-- VISTA 4: MOVIMIENTOS -->
             <div id="view-transactions" class="space-y-4 hidden animate-fade-in h-full">
                 <!-- Header Sticky -->
                 <div class="flex items-center justify-between mb-4 sticky top-0 bg-slate-800-bg z-10 py-2">
@@ -368,23 +442,23 @@
     </main>
 
     <!-- BOTTOM NAV BAR -->
-    <nav <nav
-        class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-700 shadow-lg z-50 pb-safe">
+    <nav class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-700 shadow-lg z-50 pb-safe">
         <div class="max-w-md mx-auto flex justify-around items-center h-16">
-            <button onclick="ui.switchView('home')" id="nav-btn-home"
-                class="flex flex-col items-center justify-center w-full h-full text-indigo-600 dark:text-indigo-400 transition-colors">
+            <button onclick="ui.switchView('home')" id="nav-btn-home" class="flex flex-col items-center justify-center w-full h-full text-indigo-400 transition-colors">
                 <i class="fas fa-home text-xl mb-1"></i>
+                <span class="text-[10px] font-medium">Inicio</span>
             </button>
-            <div class="relative -top-5">
-                <button onclick="ui.openModal('EXPENSE')"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition transform active:scale-95 border-4 border-slate-50 dark:border-dark-bg backdrop-blur-sm hover:backdrop-blur-md">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
-            <button onclick="ui.switchView('transactions')" id="nav-btn-transactions"
-                class="flex flex-col items-center justify-center w-full h-full text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
+            <button onclick="ui.switchView('calculator')" id="nav-btn-calculator" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-indigo-400 transition-colors">
+                <i class="fas fa-calculator text-xl mb-1"></i>
+                <span class="text-[10px] font-medium">Calculadora</span>
+            </button>
+            <button onclick="ui.switchView('wishlist')" id="nav-btn-wishlist" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-indigo-400 transition-colors">
+                <i class="fas fa-list-alt text-xl mb-1"></i>
+                <span class="text-[10px] font-medium">Wishlist</span>
+            </button>
+            <button onclick="ui.switchView('transactions')" id="nav-btn-transactions" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-indigo-400 transition-colors">
                 <i class="fas fa-list-ul text-xl mb-1"></i>
-                <span class="text-[10px] font-medium">Movimientos</span>
+                <span class="text-[10px] font-medium">Historial</span>
             </button>
         </div>
     </nav>
@@ -679,9 +753,10 @@
     </div>
 
     <!-- LOGIC -->
-    <script src="../../common/js/Database.js"></script>
+    <script src="js/Database.js"></script>
     <script src="js/core.js"></script>
     <script src="js/ui.js"></script>
+
     <script src="js/main.js"></script>
 </body>
 

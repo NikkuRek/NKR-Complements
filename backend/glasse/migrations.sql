@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS cakes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  stock INT DEFAULT 0,
+  price DECIMAL(10, 2) DEFAULT 0,
+  image_color VARCHAR(50) DEFAULT 'bg-pink-500',
+  reservations JSON,
+  credits JSON
+);
+
+CREATE TABLE IF NOT EXISTS history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  cake_id INT,
+  type VARCHAR(50),
+  amount INT DEFAULT 1,
+  client_name VARCHAR(255),
+  description TEXT,
+  date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cake_id) REFERENCES cakes(id) ON DELETE SET NULL
+);
