@@ -29,12 +29,13 @@ const ui = {
     },
     switchView: (viewName) => {
         ui.currentView = viewName;
-        const views = ['home', 'transactions', 'calculator', 'wishlist'];
+        const views = ['home', 'transactions', 'calculator', 'wishlist', 'budgets'];
         const navButtons = {
             'home': 'nav-btn-home',
             'transactions': 'nav-btn-transactions',
             'calculator': 'nav-btn-calculator',
-            'wishlist': 'nav-btn-wishlist'
+            'wishlist': 'nav-btn-wishlist',
+            'budgets': 'nav-btn-budgets'
         };
 
         views.forEach(view => {
@@ -66,6 +67,8 @@ const ui = {
             ui.renderWishlist();
         } else if (viewName === 'calculator') {
             ui.runCalculator();
+        } else if (viewName === 'budgets') {
+            ui.renderBudgets();
         }
     },
     setCurrency: (v) => { ui.renderAll(); },
@@ -307,7 +310,75 @@ const ui = {
         if (target === 'USDT') fmt = fmt.replace('$', '₮');
         return fmt;
     },
-    toggleManager: (type) => { const el = document.getElementById('manage-' + type); el.classList.toggle('hidden'); if (!el.classList.contains('hidden')) ui.renderCRUD(type); },
+    openManager: (type, force = true) => {
+        const el = document.getElementById('manage-' + type);
+        el.classList.toggle('hidden', !force);
+        if (!el.classList.contains('hidden')) {
+            ui.renderCRUD(type);
+        } else {
+            const crudEl = document.getElementById('crud-list-' + type);
+            if (crudEl) {
+                crudEl.classList.add('hidden');
+            }
+        }
+    },
+    toggleAccountDetails: async (accountId) => {
+        const detailsEl = document.getElementById(`details-${accountId}`);
+        if (!detailsEl) return;
+
+        const isHidden = detailsEl.classList.toggle('hidden');
+
+        if (!isHidden && detailsEl.innerHTML === '') {
+            detailsEl.innerHTML = `<div class="text-center text-xs p-4">Cargando...</div>`;
+            try {
+                const transactions = await app.getTransactionsForAccount(accountId, 5);
+                ui.renderAccountDetails(accountId, transactions);
+            } catch (e) {
+                console.error('Error fetching account details:', e);
+                detailsEl.innerHTML = `<div class="text-center text-xs p-4 text-rose-400">Error al cargar movimientos.</div>`;
+            }
+        }
+    },
+    renderAccountDetails: (accountId, transactions) => {
+        const detailsEl = document.getElementById(`details-${accountId}`);
+        if (!detailsEl) return;
+
+        let transactionsHtml = '<p class="text-xs text-slate-400 italic text-center p-2">No hay movimientos recientes.</p>';
+
+        if (transactions && transactions.length > 0) {
+            transactionsHtml = transactions.map(tx => {
+                const isExpense = tx.type.includes('EXPENSE') || tx.type.includes('OUT');
+                const color = isExpense ? 'text-rose-400' : 'text-emerald-400';
+                const sign = isExpense ? '-' : '+';
+                const acc = app.data.accounts.find(a => String(a.id) === String(tx.accountId));
+
+                return `
+                    <div class="flex justify-between items-center text-xs p-1.5 rounded-md hover:bg-slate-700/50">
+                        <div>
+                            <p class="font-medium text-slate-300">${tx.description}</p>
+                            <p class="text-slate-500">${new Date(tx.date).toLocaleDateString()}</p>
+                        </div>
+                        <span class="font-mono font-bold ${color}">${sign}${ui.formatMoney(tx.amount, acc.currency)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        detailsEl.innerHTML = `
+            <div class="space-y-2">
+                <h5 class="text-xs font-bold text-slate-400 px-1 pt-2">Últimos Movimientos</h5>
+                ${transactionsHtml}
+            </div>
+            <div class="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-slate-700/50">
+                <button onclick="ui.openEditAccountModal(${accountId}, 'ASSET')" class="text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-300 py-1.5 px-3 rounded-md transition">
+                    <i class="fas fa-edit mr-1"></i> Modificar
+                </button>
+                <button onclick="app.deleteAccountWrapper(${accountId}, 'ASSET')" class="text-xs font-semibold bg-rose-800/70 hover:bg-rose-800 text-white py-1.5 px-3 rounded-md transition">
+                    <i class="fas fa-trash-alt mr-1"></i> Borrar
+                </button>
+            </div>
+        `;
+    },
     openEditAccountModal: (id, type) => {
         const acc = app.data.accounts.find(a => a.id === id);
         if (!acc) { ui.showAlert('Cuenta no encontrada'); return; }
@@ -352,10 +423,12 @@ const ui = {
 
 
     renderCRUD: (type) => {
-        let listEl = document.getElementById('crud-list-' + type); listEl.innerHTML = '';
+        let listEl = document.getElementById('crud-list-' + type);
+        listEl.classList.remove('hidden');
+        listEl.innerHTML = '';
         let items = type === 'BUCKET' ? app.data.buckets : app.data.accounts.filter(a => a.type === type);
         items.forEach(item => {
-            listEl.innerHTML += `<div class="flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700"><span class="text-white">${item.name}</span><div class="flex items-center gap-2"><button onclick="${type === 'BUCKET' ? `app.editBucketWrapper('${item.id}')` : `app.editAccountWrapper('${item.id}', '${type}')`}" class="text-indigo-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-edit"></i></button><button onclick="${type === 'BUCKET' ? `app.deleteBucketWrapper('${item.id}')` : `app.deleteAccountWrapper('${item.id}', '${type}')`}" class="text-rose-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-trash-alt"></i></button></div></div>`;
+            listEl.innerHTML += `<div class="flex justify-between items-center glass-panel p-2 rounded"><span class="text-white">${item.name}</span><div class="flex items-center gap-2"><button onclick="${type === 'BUCKET' ? `app.editBucketWrapper('${item.id}')` : `app.editAccountWrapper('${item.id}', '${type}')`}" class="text-indigo-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-edit"></i></button><button onclick="${type === 'BUCKET' ? `app.deleteBucketWrapper('${item.id}')` : `app.deleteAccountWrapper('${item.id}', '${type}')`}" class="text-rose-500 px-2 backdrop-blur-sm hover:backdrop-blur-md transition"><i class="fas fa-trash-alt"></i></button></div></div>`;
         });
     },
     openModal: (type) => {
@@ -538,18 +611,20 @@ const ui = {
         }).join('');
     },
     renderList: (type, elementId) => {
-        const list = document.getElementById(elementId); list.innerHTML = '';
+        const list = document.getElementById(elementId);
+        list.innerHTML = '';
         const items = app.data.accounts.filter(a => {
             if (a.type !== type) return false;
-            // Ocultar deudas (LIABILITY) y cuentas por cobrar (RECEIVABLE) si el saldo es 0
             if (type !== 'ASSET' && Math.abs(a.balance) < 0.009) return false;
             return true;
         });
+
         if (items.length === 0) {
             list.innerHTML = `<p class="text-xs text-slate-400 italic text-center">No hay registros</p>`;
             return;
         }
-        items.forEach(acc => {
+
+        list.innerHTML = items.map(acc => {
             let iconColor = 'bg-slate-800 text-slate-400';
             let icon = 'fa-wallet';
             let borderColor = 'border-slate-700';
@@ -579,7 +654,6 @@ const ui = {
             }
 
             let datesHtml = '';
-            // Show dates only for non-assets
             if (type !== 'ASSET') {
                 const start = new Date(acc.startDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
                 datesHtml += `<span class="mr-2"><i class="fas fa-calendar-check mr-1"></i>${start}</span>`;
@@ -596,28 +670,50 @@ const ui = {
                 actionBtn = `<button onclick="ui.openSettleModal('${acc.id}', 'RECEIVABLE')" class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/30 transition ml-2 backdrop-blur-sm"><i class="fas fa-dollar-sign"></i></button>`;
             }
 
-            list.innerHTML += `
-            <div class="flex justify-between items-center p-3 bg-slate-800/50 border ${borderColor} rounded-xl shadow-sm hover:bg-slate-800 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconColor}">
-                        <i class="fas ${icon}"></i>
-                    </div>
+            if (type === 'ASSET') {
+                return `
                     <div>
-                        <p class="font-medium text-sm text-white dark:text-slate-200">${acc.name}</p>
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-fit">${acc.currency}</span>
-                            <div class="text-[10px] text-slate-400 mt-1">${datesHtml}</div>
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 border ${borderColor} rounded-xl shadow-sm hover:bg-slate-800 transition-colors cursor-pointer" onclick="ui.toggleAccountDetails('${acc.id}')">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconColor}">
+                                    <i class="fas ${icon}"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-sm text-white dark:text-slate-200">${acc.name}</p>
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-fit">${acc.currency}</span>
+                                </div>
+                            </div>
+                            <span class="font-bold ${acc.balance < 0 ? 'text-rose-500' : 'text-white dark:text-white'}">
+                                ${ui.formatMoney(acc.balance, acc.currency)}
+                            </span>
+                        </div>
+                        <div id="details-${acc.id}" class="hidden p-3 bg-slate-800/50 border ${borderColor} rounded-b-xl shadow-sm -mt-2"></div>
+                    </div>
+                `;
+            } else {
+                return `
+                <div class="flex justify-between items-center p-3 bg-slate-800/50 border ${borderColor} rounded-xl shadow-sm hover:bg-slate-800 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconColor}">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm text-white dark:text-slate-200">${acc.name}</p>
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 w-fit">${acc.currency}</span>
+                                <div class="text-[10px] text-slate-400 mt-1">${datesHtml}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="flex items-center">
-                    <span class="font-bold ${acc.balance < 0 ? 'text-rose-500' : 'text-white dark:text-white'}">
-                        ${ui.formatMoney(acc.balance, acc.currency)}
-                    </span>
-                    ${actionBtn}
-                </div>
-            </div>`;
-        });
+                    <div class="flex items-center">
+                        <span class="font-bold ${acc.balance < 0 ? 'text-rose-500' : 'text-white dark:text-white'}">
+                            ${ui.formatMoney(acc.balance, acc.currency)}
+                        </span>
+                        ${actionBtn}
+                    </div>
+                </div>`;
+            }
+        }).join('');
     },
     renderAll: () => {
         const globalCurr = document.getElementById('currency-select')?.value || 'USD';
@@ -629,7 +725,39 @@ const ui = {
         document.getElementById('display-receivables').innerText = ui.formatMoney(balance.receivables, globalCurr);
         document.getElementById('display-equity').innerText = ui.formatMoney(balance.equity, globalCurr);
         ui.renderList('ASSET', 'list-ASSET'); ui.renderList('LIABILITY', 'list-LIABILITY'); ui.renderList('RECEIVABLE', 'list-RECEIVABLE');
-        document.getElementById('buckets-list').innerHTML = app.data.buckets.map(b => `<div class="bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm"><p class="font-bold text-sm text-white dark:text-slate-200 truncate">${b.name}</p><p class="text-indigo-600 dark:text-indigo-400 font-bold mt-1">${ui.formatMoney(b.balance, globalCurr)}</p></div>`).join('');
+        // document.getElementById('buckets-list').innerHTML = app.data.buckets.map(b => `<div class="bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm"><p class="font-bold text-sm text-white dark:text-slate-200 truncate">${b.name}</p><p class="text-indigo-600 dark:text-indigo-400 font-bold mt-1">${ui.formatMoney(b.balance, globalCurr)}</p></div>`).join('');
         if (ui.currentView === 'home') { } else { ui.applyFilters(); }
+    },
+    renderBudgets: () => {
+        const globalCurr = document.getElementById('currency-select')?.value || 'USD';
+        const listEl = document.getElementById('buckets-list');
+        if (!listEl) return;
+
+        const buckets = app.data.buckets;
+
+        if (!buckets || buckets.length === 0) {
+            listEl.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-500">No hay buckets definidos.</div>`;
+            return;
+        }
+        
+        listEl.innerHTML = buckets.map(b => {
+            return `
+            <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between border border-white/5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-white truncate">${b.name}</p>
+                        <p class="text-xs text-slate-400">Disponible</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="ui.openEditBucketModal(${b.id})" class="text-slate-400 hover:text-indigo-400 transition-colors"><i class="fas fa-edit text-xs"></i></button>
+                        <button onclick="app.deleteBucketWrapper(${b.id})" class="text-slate-400 hover:text-rose-400 transition-colors"><i class="fas fa-trash text-xs"></i></button>
+                    </div>
+                </div>
+                <div class="text-right mt-4">
+                    <p class="text-indigo-400 font-mono font-bold text-lg">${ui.formatMoney(b.balance, globalCurr)}</p>
+                </div>
+            </div>
+            `;
+        }).join('');
     }
 };

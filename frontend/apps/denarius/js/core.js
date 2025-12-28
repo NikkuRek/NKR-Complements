@@ -267,4 +267,11 @@ class denarius {
             return true;
         });
     }
+
+    getTransactionsForAccount(accountId, limit = 5) {
+        return this.data.transactions
+            .filter(tx => String(tx.accountId) === String(accountId))
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, limit);
+    }
 }

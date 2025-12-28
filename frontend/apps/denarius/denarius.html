@@ -135,7 +135,7 @@
     </style>
 </head>
 
-<body class="text-slate-300 h-screen flex flex-col overflow-hidden selection:bg-indigo-500/30">
+<body class="text-slate-300 h-screen flex flex-col overflow-hidden selection:bg-indigo-500/30 ">
 
     <!-- HEADER (Minimalista y flotante) -->
     <header class="pt-6 pb-2 px-6 z-10">
@@ -278,8 +278,8 @@
                 <section class="space-y-3">
                     <div class="flex justify-between items-end px-1">
                         <h3 class="font-bold text-white text-sm">Cuentas</h3>
-                        <button onclick="ui.toggleManager('ASSET')"
-                            class="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium tracking-wide uppercase transition">Gestionar</button>
+                        <button onclick="ui.openManager('ASSET')"
+                            class="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium tracking-wide uppercase transition">Crear Cuenta</button>
                     </div>
 
                     <!-- Lista Dinámica -->
@@ -316,7 +316,7 @@
                 <section class="space-y-3">
                     <div class="flex justify-between items-end px-1">
                         <h3 class="font-bold text-white text-sm">Por Cobrar</h3>
-                        <button onclick="ui.toggleManager('RECEIVABLE')"
+                        <button onclick="ui.openManager('RECEIVABLE')"
                             class="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium tracking-wide uppercase transition">Gestionar</button>
                     </div>
 
@@ -357,7 +357,7 @@
                 <section class="space-y-3">
                     <div class="flex justify-between items-end px-1">
                         <h3 class="font-bold text-white text-sm">Deudas</h3>
-                        <button onclick="ui.toggleManager('LIABILITY')"
+                        <button onclick="ui.openManager('LIABILITY')"
                             class="text-[10px] text-rose-400 hover:text-rose-300 font-medium tracking-wide uppercase transition">Gestionar</button>
                     </div>
 
@@ -394,36 +394,40 @@
                     </div>
                 </section>
 
-                <!-- Presupuesto (Buckets) -->
-                <section class="space-y-3 pb-8">
-                    <div class="flex justify-between items-end px-1">
-                        <h3 class="font-bold text-white text-sm">Presupuesto</h3>
-                        <div class="flex gap-2">
-                            <button onclick="ui.openBucketTransferModal()"
-                                class="text-[10px] text-blue-400 hover:text-blue-300 font-medium tracking-wide uppercase transition mr-2">
-                                Mover
-                            </button>
-                            <button onclick="ui.toggleManager('BUCKET')"
-                                class="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium tracking-wide uppercase transition">Gestionar</button>
-                        </div>
+            </div>
+
+            <!-- VISTA 5: PRESUPUESTOS (BUDGETS) -->
+            <div id="view-budgets" class="hidden animate-fade-in space-y-4">
+                <!-- Header -->
+                <div class="flex items-center justify-between px-2">
+                    <h3 class="text-xl font-bold text-white">Presupuesto</h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="ui.openBucketTransferModal()"
+                            class="w-8 h-8 rounded-full bg-slate-800 text-blue-400 flex items-center justify-center border border-white/5 hover:bg-slate-700 transition">
+                            <i class="fas fa-exchange-alt text-xs"></i>
+                        </button>
+                        <button onclick="ui.openManager('BUCKET')"
+                            class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/20 hover:scale-105 transition"><i
+                                class="fas fa-plus"></i></button>
                     </div>
+                </div>
 
-                    <div id="buckets-list" class="grid grid-cols-2 gap-3"></div>
+                <!-- Formulario de Gestión -->
+                <div id="manage-BUCKET" class="hidden glass-panel p-4 rounded-2xl mt-3 animate-fade-in">
+                    <div class="mb-4 pb-3 border-b border-white/5">
+                        <h4 class="text-xs font-bold uppercase text-slate-500 mb-3">Nuevo Bucket</h4>
+                        <input type="text" id="new-BUCKET-name" placeholder="Categoría (ej. Comida)"
+                            class="w-full input-modern p-3 rounded-xl text-sm mb-3 text-white placeholder-slate-500">
+                        <input type="number" id="new-BUCKET-init" placeholder="Fondo Inicial"
+                            class="w-full input-modern p-3 rounded-xl text-sm mb-3 text-white placeholder-slate-500">
 
-                    <div id="manage-BUCKET" class="hidden glass-panel p-4 rounded-2xl mt-3 animate-fade-in">
-                        <div class="mb-4 pb-3 border-b border-white/5">
-                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-3">Nuevo Bucket</h4>
-                            <input type="text" id="new-BUCKET-name" placeholder="Categoría (ej. Comida)"
-                                class="w-full input-modern p-3 rounded-xl text-sm mb-3 text-white placeholder-slate-500">
-                            <input type="number" id="new-BUCKET-init" placeholder="Fondo Inicial"
-                                class="w-full input-modern p-3 rounded-xl text-sm mb-3 text-white placeholder-slate-500">
-
-                            <button onclick="app.handleCreateBucket()"
-                                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20 transition">Guardar</button>
-                        </div>
-                        <div id="crud-list-BUCKET" class="space-y-2 text-sm"></div>
+                        <button onclick="app.handleCreateBucket()"
+                            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20 transition">Guardar</button>
                     </div>
-                </section>
+                </div>
+                
+                <!-- Lista de Buckets -->
+                <div id="buckets-list" class="grid grid-cols-2 gap-3 pb-20"></div>
             </div>
 
             <!-- VISTA 2: CALCULADORA -->
@@ -614,6 +618,11 @@
                 <i class="fas fa-history text-lg group-hover:scale-110 transition duration-300"></i>
             </button>
 
+            <button onclick="ui.switchView('budgets')" id="nav-btn-budgets"
+                class="group relative flex items-center justify-center text-slate-500 hover:text-indigo-400 transition-colors">
+                <i class="fas fa-wallet text-lg group-hover:scale-110 transition duration-300"></i>
+            </button>
+
         </div>
     </nav>
 
@@ -626,7 +635,7 @@
 
         <!-- Content -->
         <div
-            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-[#151921] rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl border-t sm:border border-white/10 transform transition-all animate-slide-up">
+            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md glass-panel rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl border-t sm:border border-white/10 transform transition-all animate-slide-up">
 
             <div class="flex justify-between items-center mb-6">
                 <h3 id="modal-title" class="text-xl font-bold text-white">Registrar</h3>
@@ -681,9 +690,8 @@
     <!-- MODAL TRANSFERENCIA -->
     <div id="transfer-modal" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onclick="document.getElementById('transfer-modal').classList.add('hidden')"></div>
         <div
-            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-[#151921] rounded-t-[2rem] sm:rounded-[2rem] p-6 border-t sm:border border-white/10">
+            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md glass-panel rounded-t-[2rem] sm:rounded-[2rem] p-6 border-t sm:border border-white/10">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-white">Transferir</h3>
                 <button onclick="document.getElementById('transfer-modal').classList.add('hidden')"
@@ -728,7 +736,7 @@
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onclick="document.getElementById('bucket-transfer-modal').classList.add('hidden')"></div>
         <div
-            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-[#151921] rounded-t-[2rem] sm:rounded-[2rem] p-6 border-t sm:border border-white/10">
+            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md glass-panel rounded-t-[2rem] sm:rounded-[2rem] p-6 border-t sm:border border-white/10">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-white">Mover Presupuesto</h3>
                 <button onclick="document.getElementById('bucket-transfer-modal').classList.add('hidden')"
@@ -761,7 +769,7 @@
     <div id="edit-account-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onclick="document.getElementById('edit-account-modal').classList.add('hidden')"></div>
-        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
+        <div class="relative w-full max-w-md glass-panel rounded-2xl p-6 border border-white/10 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="edit-account-title" class="text-lg font-bold text-white">Editar Cuenta</h3>
                 <button onclick="document.getElementById('edit-account-modal').classList.add('hidden')"
@@ -771,6 +779,14 @@
                 <input type="hidden" id="edit-account-id">
                 <input type="hidden" id="edit-account-type">
                 <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div id="edit-account-start-container">
+                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
+                        </div>
+                        <div id="edit-account-due-container">
+                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Vence</label>
+                        </div>
+                    </div>    
                     <input type="text" id="edit-account-name" class="w-full input-modern p-3 rounded-xl text-white"
                         required>
                     <div class="flex gap-2">
@@ -783,14 +799,6 @@
                             <option class="bg-slate-800" value="USDT">USDT</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div id="edit-account-start-container">
-                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
-                        </div>
-                        <div id="edit-account-due-container">
-                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Vence</label>
-                        </div>
-                    </div>
                 </div>
                 <button type="submit" class="w-full mt-6 bg-indigo-600 text-white font-bold py-3 rounded-xl">Guardar
                     Cambios</button>
@@ -802,7 +810,7 @@
     <div id="edit-bucket-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onclick="document.getElementById('edit-bucket-modal').classList.add('hidden')"></div>
-        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
+        <div class="relative w-full max-w-md glass-panel rounded-2xl p-6 border border-white/10 shadow-2xl">
             <h3 class="text-lg font-bold text-white mb-4">Editar Bucket</h3>
             <form onsubmit="app.updateBucketWrapper(event)">
                 <input type="hidden" id="edit-bucket-id">
@@ -819,7 +827,7 @@
     <!-- MODAL WISHLIST EDIT -->
     <div id="wishlist-edit-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="ui.closeWishlistEditModal()"></div>
-        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
+        <div class="relative w-full max-w-md glass-panel rounded-2xl p-6 border border-white/10 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-white">Editar Deseo</h3>
                 <button onclick="ui.closeWishlistEditModal()" class="text-slate-400"><i
@@ -852,7 +860,7 @@
     <div id="settle-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onclick="document.getElementById('settle-modal').classList.add('hidden')"></div>
-        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
+        <div class="relative w-full max-w-md glass-panel rounded-2xl p-6 border border-white/10 shadow-2xl">
             <h3 id="settle-title" class="text-lg font-bold text-white mb-4">Liquidar</h3>
             <form onsubmit="app.executeSettle(event)">
                 <input type="hidden" id="settle-id">
@@ -890,7 +898,7 @@
     <div id="message-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center px-6">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
         <div
-            class="relative w-full max-w-xs bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl text-center">
+            class="relative w-full max-w-xs glass-panel rounded-2xl p-6 border border-white/10 shadow-2xl text-center">
             <div
                 class="w-12 h-12 rounded-full bg-slate-800 mx-auto mb-4 flex items-center justify-center text-indigo-400">
                 <i class="fas fa-info"></i>
@@ -906,7 +914,7 @@
     <div id="confirm-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center px-6">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
         <div
-            class="relative w-full max-w-xs bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl text-center">
+            class="relative w-full max-w-xs glass-panel rounded-2xl p-6 border border-white/10 shadow-2xl text-center">
             <div
                 class="w-12 h-12 rounded-full bg-rose-900/20 mx-auto mb-4 flex items-center justify-center text-rose-500">
                 <i class="fas fa-exclamation-triangle"></i>

@@ -22,7 +22,7 @@ const API_BASE_URL = 'http://localhost:3000/api';
             if (!name) { ui.showAlert("Requerido"); return; }
             try {
                 await app.createAccount(name, type, curr, initBal, startDate, dueDate);
-                ui.toggleManager(type);
+                ui.openManager(type, false);
                 ui.renderCRUD(type);
                 ui.renderAll();
             } catch (err) { ui.showAlert('Error: ' + err.message); }
@@ -44,7 +44,7 @@ const API_BASE_URL = 'http://localhost:3000/api';
             if (!name) return;
             try {
                 await app.createBucket(name, initBal);
-                ui.toggleManager('BUCKET');
+                ui.openManager('BUCKET', false);
                 ui.renderCRUD('BUCKET');
                 ui.renderAll();
             } catch (err) { ui.showAlert('Error: ' + err.message); }
