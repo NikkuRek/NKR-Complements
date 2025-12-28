@@ -25,10 +25,12 @@ router.post('/', async (req, res) => {
       [tx_date, amount, type, account_id, bucket_id, source_bucket_id, description]
     );
 
+    const lowerCaseType = type.toLowerCase();
+
     if (account_id) {
-      if (type === 'income') {
+      if (lowerCaseType === 'income' || lowerCaseType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, account_id]);
-      } else if (type === 'expense') {
+      } else if (lowerCaseType === 'expense' || lowerCaseType === 'transfer_out') {
         await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, account_id]);
       }
     }
@@ -86,9 +88,10 @@ router.put('/:tx_id', async (req, res) => {
 
     // Revert old transaction logic (using oldTx values)
     if (oldTx.account_id) {
-      if (oldTx.type === 'income') {
+      const oldType = oldTx.type.toLowerCase();
+      if (oldType === 'income' || oldType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [oldTx.amount, oldTx.account_id]);
-      } else if (oldTx.type === 'expense') {
+      } else if (oldType === 'expense' || oldType === 'transfer_out') {
         await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [oldTx.amount, oldTx.account_id]);
       }
     }
@@ -111,9 +114,10 @@ router.put('/:tx_id', async (req, res) => {
 
     // Apply new transaction logic (using merged values)
     if (account_id) {
-      if (type === 'income') {
+      const newType = type.toLowerCase();
+      if (newType === 'income' || newType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, account_id]);
-      } else if (type === 'expense') {
+      } else if (newType === 'expense' || newType === 'transfer_out') {
         await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, account_id]);
       }
     }
@@ -156,9 +160,10 @@ router.delete('/:tx_id', async (req, res) => {
     await connection.query('DELETE FROM transactions WHERE id = ?', [tx_id]);
 
     if (tx.account_id) {
-      if (tx.type === 'income') {
+      const oldType = tx.type.toLowerCase();
+      if (oldType === 'income' || oldType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [tx.amount, tx.account_id]);
-      } else if (tx.type === 'expense') {
+      } else if (oldType === 'expense' || oldType === 'transfer_out') {
         await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [tx.amount, tx.account_id]);
       }
     }

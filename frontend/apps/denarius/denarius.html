@@ -1,763 +1,947 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NKR - Denarius</title>
     <link rel="icon"
-        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='%234f46e5'%20d='M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm0%2018c-4.41%200-8-3.59-8-8s3.59-8%208-8%208%203.59%208%208-3.59%208-8%208zm-1-12h2v6h-2zm0%208h2v2h-2z'/%3E%3C/svg%3E"
+        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='%236366f1'%20d='M12%202C6.48%202%202%206.48%202%2012s4.48%2010%2010%2010%2010-4.48%2010-10S17.52%202%2012%202zm0%2018c-4.41%200-8-3.59-8-8s3.59-8%208-8%208%203.59%208%208-3.59%208-8%208zm-1-12h2v6h-2zm0%208h2v2h-2z'/%3E%3C/svg%3E"
         type="image/svg+xml">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Custom Datepicker CSS -->
+    <link rel="stylesheet" href="../../common/css/datepicker.css">
+
+    <!-- Google Fonts: Inter & Space Grotesk for numbers -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Ajustes específicos para scroll oculto y fuentes */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0B0E14;
+        }
+
+        .font-mono-num {
+            font-family: 'Space Grotesk', monospace;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Efecto Glassmorphism Premium */
+        .glass-panel {
+            background: rgba(21, 25, 33, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Inputs modernos sin borde por defecto */
+        .input-modern {
+            background-color: rgba(30, 41, 59, 0.5);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .input-modern:focus {
+            background-color: rgba(30, 41, 59, 0.8);
+            border-color: #6366f1;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Estilos para el calendario del input date */
+        ::-webkit-datetime-edit { 
+            color: #e2e8f0; 
+            padding: 0.5rem;
+        }
+        
+        ::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(0.8);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            background-color: #1e293b;
+        }
+        
+        ::-webkit-calendar-picker-indicator:hover {
+            background-color: #334155;
+        }
+        
+        /* Estilos para el diálogo del calendario */
+        ::-webkit-datetime-edit-fields-wrapper {
+            background: #1e293b;
+        }
+        
+        ::-webkit-datetime-edit-text,
+        ::-webkit-datetime-edit-month-field,
+        ::-webkit-datetime-edit-day-field,
+        ::-webkit-datetime-edit-year-field {
+            color: #e2e8f0;
+            padding: 0 0.15em;
+        }
+        
+        /* Estilo para los días en el calendario */
+        ::-webkit-calendar-picker {
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+        }
+        
+        ::-webkit-calendar-picker-header {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 0.5rem;
+        }
+        
+        ::-webkit-calendar-picker-day {
+            color: #e2e8f0;
+        }
+        
+        ::-webkit-calendar-picker-day:not(:empty):hover {
+            background: #334155;
+            color: #fff;
+        }
+        
+        ::-webkit-calendar-picker-day:not(:empty).today {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+        
+        ::-webkit-calendar-picker-day:not(:empty).selected {
+            background: #3b82f6;
+            color: white;
+        }
+    </style>
 </head>
 
-<body
-    class="font-sans bg-slate-900 text-slate-100 h-screen flex flex-col overflow-hidden transition-colors duration-300">
+<body class="text-slate-300 h-screen flex flex-col overflow-hidden selection:bg-indigo-500/30">
 
-
-    <!-- HEADER (Fijo arriba) -->
-    <header
-        class="bg-slate-700/50 backdrop-blur-lg backdrop-saturate-150 shadow-lg p-4 z-10 transition-colors duration-300">
+    <!-- HEADER (Minimalista y flotante) -->
+    <header class="pt-6 pb-2 px-6 z-10">
         <div class="max-w-md mx-auto flex justify-between items-center">
-            <a href="../../index.html" class="flex items-center gap-2 animate-fade-in"> <i
-                    class="fas fa-home text-slate-200"></i> </a>
-            <h1 class="text-xl font-bold text-white">
-                <i
-                    class="fas fa-wallet bg-gradient-to-tl from-blue-600 to-indigo-500 inline-block text-transparent bg-clip-text">
-                </i>
+            <a href="../../index.html" class="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-white/5">
+                    <i class="fas fa-arrow-left text-slate-400 text-sm"></i>
+                </div>
+            </a>
+            <h1 class="text-lg font-bold tracking-tight">
                 <span class="text-white">Dena</span><span class="text-indigo-500">rius</span>
             </h1>
+            <div class="w-8 h-8 rounded-full bg-slate-800/50 flex items-center justify-center border border-white/5">
+                <i class="fas fa-user-circle text-slate-400"></i>
+            </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT (Scrollable area) -->
-    <main class="flex-1 overflow-y-auto hide-scrollbar p-4 pb-28 relative">
-        <div class="max-w-md mx-auto h-full">
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-5 pb-32 relative">
+        <div class="max-w-md mx-auto h-full space-y-8">
 
             <!-- VISTA 1: INICIO (HOME) -->
             <div id="view-home" class="space-y-6 animate-fade-in">
 
-                <!-- TASAS DE CAMBIO -->
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div
-                        class="bg-slate-800/50 backdrop-blur-sm p-3 rounded-xl border border-slate-700 flex justify-between items-center shadow-sm">
-                        <span class="text-slate-400 font-semibold">Bs/$ (USD):</span>
+                <!-- TASAS DE CAMBIO (Pills Style) -->
+                <div class="flex gap-3 justify-center text-xs">
+                    <!-- USD Widget -->
+                    <div class="glass-panel px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg shadow-black/20">
+                        <span class="text-slate-400 font-semibold">USD</span>
+                        <div class="h-3 w-[1px] bg-slate-700"></div>
                         <input type="number" id="rate-usd" onchange="ui.setRate('USD', this.value)"
-                            class="w-20 p-1 border rounded bg-slate-700 border-slate-600 text-right font-mono font-bold text-indigo-400 outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                            class="w-16 bg-transparent text-right font-mono-num font-bold text-indigo-400 outline-none placeholder-slate-600"
                             placeholder="0.00">
-                        <button id="rate-usd-btn" onclick="ui.fetchUsdOfficial()" title="Actualizar tasa oficial"
-                            class="ml-2 text-xs px-2 py-1 rounded border bg-slate-700/50 text-slate-200 backdrop-blur-sm hover:backdrop-blur-md transition">⟲</button>
+                        <button id="rate-usd-btn" onclick="ui.fetchUsdOfficial()"
+                            class="text-indigo-400 hover:text-white transition-colors"><i
+                                class="fas fa-sync-alt text-[10px]"></i></button>
                     </div>
-                    <div
-                        class="bg-slate-800/50 backdrop-blur-sm p-3 rounded-xl border border-slate-700 flex justify-between items-center shadow-sm">
-                        <span class="text-slate-400 font-semibold">Bs/₮ (USDT):</span>
+
+                    <!-- USDT Widget -->
+                    <div class="glass-panel px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg shadow-black/20">
+                        <span class="text-slate-400 font-semibold">USDT</span>
+                        <div class="h-3 w-[1px] bg-slate-700"></div>
                         <input type="number" id="rate-usdt" onchange="ui.setRate('USDT', this.value)"
-                            class="w-20 p-1 border rounded bg-slate-700 border-slate-600 text-right font-mono font-bold text-emerald-300 outline-none focus:ring-1 focus:ring-emerald-500 transition"
+                            class="w-16 bg-transparent text-right font-mono-num font-bold text-emerald-400 outline-none placeholder-slate-600"
                             placeholder="0.00">
-                        <button id="rate-usdt-btn" onclick="ui.fetchUsdtParalelo()" title="Actualizar tasa paralelo"
-                            class="ml-2 text-xs px-2 py-1 rounded border bg-slate-700/50 text-slate-200 backdrop-blur-sm hover:backdrop-blur-md transition">⟲</button>
+                        <button id="rate-usdt-btn" onclick="ui.fetchUsdtParalelo()"
+                            class="text-emerald-400 hover:text-white transition-colors"><i
+                                class="fas fa-sync-alt text-[10px]"></i></button>
                     </div>
                 </div>
 
-                <!-- BALANCE GENERAL -->
+                <!-- BALANCE GENERAL (Hero Card) -->
                 <section
-                    class="bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-6 shadow-lg relative overflow-hidden border border-slate-700">
+                    class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#2e2a5b] to-[#0f172a] p-6 shadow-2xl border border-white/10 group">
+                    <!-- Decorative blurred blobs -->
                     <div
-                        class="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-indigo-500 rounded-full opacity-20 blur-xl">
+                        class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-indigo-500 rounded-full opacity-10 blur-3xl group-hover:opacity-20 transition duration-700">
+                    </div>
+                    <div
+                        class="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-blue-500 rounded-full opacity-5 blur-3xl">
                     </div>
 
-                    <div class="flex justify-between items-start mb-1 relative z-10">
-                        <p class="text-slate-400 text-sm font-medium">Patrimonio Neto Total</p>
-                        <select id="currency-select" onchange="ui.setCurrency(this.value)"
-                            class="bg-slate-800/60 text-white text-[10px] font-bold uppercase rounded-lg py-1 px-2 focus:outline-none cursor-pointer border border-slate-700 hover:bg-slate-700 transition-colors">
-                            <option value="USD" class="text-slate-100">USD ($)</option>
-                            <option value="VES" class="text-slate-100">VES (Bs.)</option>
-                            <option value="USDT" class="text-slate-100">USDT (₮)</option>
-                        </select>
+                    <div class="flex justify-between items-start mb-2 relative z-10">
+                        <p class="text-indigo-200/70 text-xs font-medium uppercase tracking-wider">Patrimonio Neto</p>
+                        <!-- Selector de moneda transparente -->
+                        <div class="relative">
+                            <select id="currency-select" onchange="ui.setCurrency(this.value)"
+                                class="appearance-none bg-black/20 text-white text-[10px] font-bold uppercase rounded-lg py-1 px-3 pr-6 focus:outline-none cursor-pointer border border-white/10 hover:bg-black/30 transition-colors">
+                                <option value="USD" class="bg-slate-900">USD</option>
+                                <option value="VES" class="bg-slate-900">VES</option>
+                                <option value="USDT" class="bg-slate-900">USDT</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-300">
+                                <i class="fas fa-chevron-down text-[8px]"></i>
+                            </div>
+                        </div>
                     </div>
 
-                    <h2 id="display-equity" class="text-3xl font-bold mb-4 relative z-10">$0.00</h2>
+                    <h2 id="display-equity"
+                        class="text-4xl font-mono-num font-bold text-white mb-6 relative z-10 tracking-tight">$0.00</h2>
 
-                    <div class="grid grid-cols-3 gap-2 border-t border-slate-700 pt-4 text-center relative z-10">
-                        <div>
-                            <p class="text-[10px] text-emerald-400 mb-1 uppercase tracking-wide">Activos</p>
-                            <p id="display-assets" class="font-semibold text-sm">$0.00</p>
+                    <div class="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 relative z-10">
+                        <div class="text-center">
+                            <div class="flex items-center justify-center gap-1 mb-1 text-emerald-400/80">
+                                <i class="fas fa-arrow-up text-[10px]"></i>
+                                <p class="text-[9px] uppercase tracking-wide font-bold">Activos</p>
+                            </div>
+                            <p id="display-assets" class="font-mono-num font-medium text-white text-xs">$0.00</p>
                         </div>
-                        <div>
-                            <p class="text-[10px] text-emerald-400 mb-1 uppercase tracking-wide">Por Cobrar</p>
-                            <p id="display-receivables" class="font-semibold text-sm">$0.00</p>
+                        <div class="text-center border-l border-white/5">
+                            <div class="flex items-center justify-center gap-1 mb-1 text-blue-400/80">
+                                <i class="far fa-clock text-[10px]"></i>
+                                <p class="text-[9px] uppercase tracking-wide font-bold">Cobrar</p>
+                            </div>
+                            <p id="display-receivables" class="font-mono-num font-medium text-white text-xs">$0.00</p>
                         </div>
-                        <div>
-                            <p class="text-[10px] text-rose-400 mb-1 uppercase tracking-wide">Deudas</p>
-                            <p id="display-liabilities" class="font-semibold text-sm">$0.00</p>
+                        <div class="text-center border-l border-white/5">
+                            <div class="flex items-center justify-center gap-1 mb-1 text-rose-400/80">
+                                <i class="fas fa-arrow-down text-[10px]"></i>
+                                <p class="text-[9px] uppercase tracking-wide font-bold">Deudas</p>
+                            </div>
+                            <p id="display-liabilities" class="font-mono-num font-medium text-white text-xs">$0.00</p>
                         </div>
                     </div>
                 </section>
 
-                <!-- ACCIONES RÁPIDAS -->
-                <div class="grid grid-cols-3 gap-2">
+                <!-- ACCIONES RÁPIDAS (Icon Row) -->
+                <div class="grid grid-cols-3 gap-3">
                     <button onclick="ui.openModal('INCOME')"
-                        class="bg-emerald-900/30 text-emerald-300 py-3 rounded-xl font-semibold hover:bg-emerald-900/50 backdrop-blur-sm hover:backdrop-blur-md transition flex flex-col items-center justify-center gap-1 shadow-sm border border-emerald-700/30">
-                        <i class="fas fa-plus-circle text-xl"></i> <span class="text-xs">Ingreso</span>
+                        class="group glass-panel p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-slate-800 transition active:scale-95">
+                        <div
+                            class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition">
+                            <i class="fas fa-plus text-emerald-400 text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-medium text-slate-300">Ingreso</span>
                     </button>
                     <button onclick="ui.openModal('EXPENSE')"
-                        class="bg-rose-900/30 text-rose-300 py-3 rounded-xl font-semibold hover:bg-rose-900/50 backdrop-blur-sm hover:backdrop-blur-md transition flex flex-col items-center justify-center gap-1 shadow-sm border border-rose-700/30">
-                        <i class="fas fa-minus-circle text-xl"></i> <span class="text-xs">Gasto</span>
+                        class="group glass-panel p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-slate-800 transition active:scale-95">
+                        <div
+                            class="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center group-hover:bg-rose-500/20 transition">
+                            <i class="fas fa-minus text-rose-400 text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-medium text-slate-300">Gasto</span>
                     </button>
                     <button onclick="ui.openTransferModal()"
-                        class="bg-indigo-900/30 text-indigo-300 py-3 rounded-xl font-semibold hover:bg-indigo-900/50 backdrop-blur-sm hover:backdrop-blur-md transition flex flex-col items-center justify-center gap-1 shadow-sm border border-indigo-700/30">
-                        <i class="fas fa-exchange-alt text-xl"></i> <span class="text-xs">Transferir</span>
+                        class="group glass-panel p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-slate-800 transition active:scale-95">
+                        <div
+                            class="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20 transition">
+                            <i class="fas fa-exchange-alt text-indigo-400 text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-medium text-slate-300">Mover</span>
                     </button>
                 </div>
 
                 <!-- SECCIONES DE CUENTAS -->
-                <section>
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-slate-200 flex items-center gap-2"><i
-                                class="fas fa-building-columns text-indigo-400"></i> Mis Cuentas</h3>
-                        <div class="flex gap-2">
-                            <button onclick="ui.toggleManager('ASSET')"
-                                class="text-xs text-indigo-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-indigo-900/40 hover:text-indigo-200 transition">Gestionar</button>
-                        </div>
+
+                <!-- Activos -->
+                <section class="space-y-3">
+                    <div class="flex justify-between items-end px-1">
+                        <h3 class="font-bold text-white text-sm">Cuentas</h3>
+                        <button onclick="ui.toggleManager('ASSET')"
+                            class="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium tracking-wide uppercase transition">Gestionar</button>
                     </div>
+
+                    <!-- Lista Dinámica -->
                     <div id="list-ASSET" class="space-y-3"></div>
-                    <div id="manage-ASSET"
-                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
-                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
-                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Crear Cuenta</h4>
-                            <div class="flex gap-2 mb-2">
-                                <input type="text" id="new-ASSET-name" placeholder="Nombre"
-                                    class="flex-1 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+
+                    <!-- Formulario de Gestión (Card Expansible) -->
+                    <div id="manage-ASSET" class="hidden glass-panel p-4 rounded-2xl mt-3 animate-fade-in">
+                        <div class="mb-4 pb-3 border-b border-white/5">
+                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-3">Nueva Cuenta</h4>
+                            <div class="mb-3">
+                                <input type="text" id="new-ASSET-name" placeholder="Nombre (ej. Banco)"
+                                    class="w-full input-modern p-3 rounded-xl text-sm text-white placeholder-slate-500">
+                            </div>
+                            <div class="flex gap-2 mb-3">
+                                <input type="number" id="new-ASSET-init" placeholder="Saldo Inicial"
+                                    class="w-2/3 input-modern p-3 rounded-xl text-sm text-white placeholder-slate-500">
                                 <select id="new-ASSET-currency"
-                                    class="w-24 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
-                                    <option value="USD">USD</option>
-                                    <option value="VES">VES</option>
-                                    <option value="USDT">USDT</option>
+                                    class="w-1/3 input-modern p-3 rounded-xl text-sm text-white bg-slate-800">
+                                    <option class="bg-slate-800" value="USD">USD</option>
+                                    <option class="bg-slate-800" value="VES">VES</option>
+                                    <option class="bg-slate-800" value="USDT">USDT</option>
                                 </select>
                             </div>
-                            <div class="mb-2">
-                                <input type="number" id="new-ASSET-init" placeholder="Saldo Inicial (Opcional)"
-                                    class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
-                            </div>
                             <button onclick="app.handleCreateAccount('ASSET')"
-                                class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20 transition">
+                                Crear Cuenta
+                            </button>
                         </div>
                         <div id="crud-list-ASSET" class="space-y-2 text-sm"></div>
                     </div>
                 </section>
 
-                <section>
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i
-                                class="fas fa-hand-holding-dollar text-emerald-500"></i> Por Cobrar</h3>
-                        <div class="flex gap-2">
-                            <button onclick="ui.toggleManager('RECEIVABLE')"
-                                class="text-xs text-emerald-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-emerald-900/40 hover:text-emerald-200 transition">Gestionar</button>
-                        </div>
+                <!-- Por Cobrar -->
+                <section class="space-y-3">
+                    <div class="flex justify-between items-end px-1">
+                        <h3 class="font-bold text-white text-sm">Por Cobrar</h3>
+                        <button onclick="ui.toggleManager('RECEIVABLE')"
+                            class="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium tracking-wide uppercase transition">Gestionar</button>
                     </div>
+
                     <div id="list-RECEIVABLE" class="space-y-3"></div>
-                    <div id="manage-RECEIVABLE"
-                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
-                        <div class="mb-4 pb-4 border-b border-slate-700">
-                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nueva Cuenta</h4>
-                            <div class="flex gap-2 mb-2">
+
+                    <div id="manage-RECEIVABLE" class="hidden glass-panel p-4 rounded-2xl mt-3 animate-fade-in">
+                        <div class="mb-4 pb-3 border-b border-white/5">
+                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-3">Nuevo Préstamo</h4>
+                            <div class="mb-3">
                                 <input type="text" id="new-RECEIVABLE-name" placeholder="Deudor"
-                                    class="flex-1 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                    class="w-full input-modern p-3 rounded-xl text-sm text-white placeholder-slate-500">
+                            </div>
+                            <div class="flex gap-2 mb-3">
+                                <input type="number" id="new-RECEIVABLE-init" placeholder="Monto"
+                                    class="w-2/3 input-modern p-3 rounded-xl text-sm text-white placeholder-slate-500">
                                 <select id="new-RECEIVABLE-currency"
-                                    class="w-24 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
-                                    <option value="USD">USD</option>
-                                    <option value="VES">VES</option>
+                                    class="w-1/3 input-modern p-3 rounded-xl text-sm text-white bg-slate-800">
+                                    <option class="bg-slate-800" value="USD">USD</option>
+                                    <option class="bg-slate-800" value="VES">VES</option>
                                 </select>
                             </div>
-                            <!-- FECHAS -->
-                            <div class="grid grid-cols-2 gap-2 mb-2">
-                                <div>
-                                    <label class="text-[10px] uppercase font-bold text-slate-400">Inicio</label>
-                                    <input type="date" id="new-RECEIVABLE-date"
-                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            <div class="grid grid-cols-2 gap-2 mb-3">
+                                <div id="new-receivable-date-container">
+                                    <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
                                 </div>
-                                <div>
-                                    <label class="text-[10px] uppercase font-bold text-slate-400">Cobro
-                                        (Opcional)</label>
-                                    <input type="date" id="new-RECEIVABLE-due"
-                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                <div id="new-receivable-due-container">
+                                    <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Vence</label>
                                 </div>
-                            </div>
-                            <div class="mb-2">
-                                <input type="number" id="new-RECEIVABLE-init"
-                                    placeholder="Monto deuda inicial (Opcional)"
-                                    class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
                             </div>
                             <button onclick="app.handleCreateAccount('RECEIVABLE')"
-                                class="w-full bg-emerald-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/20 transition">Guardar</button>
                         </div>
                         <div id="crud-list-RECEIVABLE" class="space-y-2 text-sm"></div>
                     </div>
                 </section>
 
-                <section>
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i
-                                class="fas fa-file-invoice-dollar text-rose-500"></i> Deudas</h3>
-                        <div class="flex gap-2">
-                            <button onclick="ui.toggleManager('LIABILITY')"
-                                class="text-xs text-rose-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-rose-900/40 hover:text-rose-200 transition">Gestionar</button>
-                        </div>
+                <!-- Deudas -->
+                <section class="space-y-3">
+                    <div class="flex justify-between items-end px-1">
+                        <h3 class="font-bold text-white text-sm">Deudas</h3>
+                        <button onclick="ui.toggleManager('LIABILITY')"
+                            class="text-[10px] text-rose-400 hover:text-rose-300 font-medium tracking-wide uppercase transition">Gestionar</button>
                     </div>
+
                     <div id="list-LIABILITY" class="space-y-3"></div>
-                    <div id="manage-LIABILITY"
-                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
-                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
-                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nueva Deuda</h4>
-                            <div class="flex gap-2 mb-2">
+
+                    <div id="manage-LIABILITY" class="hidden glass-panel p-4 rounded-2xl mt-3 animate-fade-in">
+                        <div class="mb-4 pb-3 border-b border-white/5">
+                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-3">Nueva Deuda</h4>
+                            <div class="mb-3">
                                 <input type="text" id="new-LIABILITY-name" placeholder="Acreedor"
-                                    class="flex-1 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
+                                    class="w-full input-modern p-3 rounded-xl text-sm text-white placeholder-slate-500">
+                            </div>
+                            <div class="flex gap-2 mb-3">
+                                <input type="number" id="new-LIABILITY-init" placeholder="Monto"
+                                    class="w-2/3 input-modern p-3 rounded-xl text-sm text-white placeholder-slate-500">
                                 <select id="new-LIABILITY-currency"
-                                    class="w-24 p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
-                                    <option value="USD">USD</option>
-                                    <option value="VES">VES</option>
+                                    class="w-1/3 input-modern p-3 rounded-xl text-sm text-white bg-slate-800">
+                                    <option class="bg-slate-800" value="USD">USD</option>
+                                    <option class="bg-slate-800" value="VES">VES</option>
                                 </select>
                             </div>
-                            <!-- FECHAS -->
-                            <div class="grid grid-cols-2 gap-2 mb-2">
-                                <div>
-                                    <label class="text-[10px] uppercase font-bold text-slate-400">Inicio</label>
-                                    <input type="date" id="new-LIABILITY-date"
-                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                            <div class="grid grid-cols-2 gap-2 mb-3">
+                                <div id="new-liability-date-container">
+                                    <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
                                 </div>
-                                <div>
-                                    <label class="text-[10px] uppercase font-bold text-slate-400">Pago
-                                        (Opcional)</label>
-                                    <input type="date" id="new-LIABILITY-due"
-                                        class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                                <div id="new-liability-due-container">
+                                    <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Pago</label>
                                 </div>
-                            </div>
-                            <div class="mb-2">
-                                <input type="number" id="new-LIABILITY-init"
-                                    placeholder="Monto deuda inicial (Opcional)"
-                                    class="w-full p-2 border rounded text-sm dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
                             </div>
                             <button onclick="app.handleCreateAccount('LIABILITY')"
-                                class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                                class="w-full bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-rose-500/20 transition">Guardar</button>
                         </div>
                         <div id="crud-list-LIABILITY" class="space-y-2 text-sm"></div>
                     </div>
                 </section>
 
-                <section>
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-slate-700 dark:text-slate-200">Presupuesto (Buckets)</h3>
+                <!-- Presupuesto (Buckets) -->
+                <section class="space-y-3 pb-8">
+                    <div class="flex justify-between items-end px-1">
+                        <h3 class="font-bold text-white text-sm">Presupuesto</h3>
                         <div class="flex gap-2">
                             <button onclick="ui.openBucketTransferModal()"
-                                class="text-xs text-blue-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 hover:bg-blue-900/40 hover:text-blue-200 transition backdrop-blur-sm">
-                                <i class="fas fa-exchange-alt mr-1"></i> Mover
+                                class="text-[10px] text-blue-400 hover:text-blue-300 font-medium tracking-wide uppercase transition mr-2">
+                                Mover
                             </button>
                             <button onclick="ui.toggleManager('BUCKET')"
-                                class="text-xs text-indigo-300 font-medium bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 backdrop-blur-sm hover:bg-indigo-900/40 hover:text-indigo-200 transition">Gestionar</button>
+                                class="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium tracking-wide uppercase transition">Gestionar</button>
                         </div>
                     </div>
+
                     <div id="buckets-list" class="grid grid-cols-2 gap-3"></div>
-                    <div id="manage-BUCKET"
-                        class="hidden bg-slate-900/95 backdrop-blur-md p-4 rounded-xl shadow-sm mt-3 border border-slate-700">
-                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
-                            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Nuevo Bucket</h4>
-                            <input type="text" id="new-BUCKET-name" placeholder="Categoría"
-                                class="w-full p-2 border rounded text-sm mb-2 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
-                            <input type="number" id="new-BUCKET-init" placeholder="Fondo Inicial (Opcional)"
-                                class="w-full p-2 border rounded text-sm mb-2 dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+
+                    <div id="manage-BUCKET" class="hidden glass-panel p-4 rounded-2xl mt-3 animate-fade-in">
+                        <div class="mb-4 pb-3 border-b border-white/5">
+                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-3">Nuevo Bucket</h4>
+                            <input type="text" id="new-BUCKET-name" placeholder="Categoría (ej. Comida)"
+                                class="w-full input-modern p-3 rounded-xl text-sm mb-3 text-white placeholder-slate-500">
+                            <input type="number" id="new-BUCKET-init" placeholder="Fondo Inicial"
+                                class="w-full input-modern p-3 rounded-xl text-sm mb-3 text-white placeholder-slate-500">
 
                             <button onclick="app.handleCreateBucket()"
-                                class="w-full bg-indigo-600/90 text-white py-2 rounded text-sm font-medium shadow-md backdrop-blur-sm hover:backdrop-blur-md transition">Guardar</button>
+                                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20 transition">Guardar</button>
                         </div>
                         <div id="crud-list-BUCKET" class="space-y-2 text-sm"></div>
                     </div>
                 </section>
-                <div class="h-24"></div>
             </div>
 
             <!-- VISTA 2: CALCULADORA -->
-            <div id="view-calculator" class="space-y-4 hidden animate-fade-in">
-                <div class="flex items-center gap-2">
-                    <div class="bg-indigo-600 w-1 h-6 rounded-r"></div>
-                    <h3 class="text-xl font-bold text-slate-200">Calculadora de Divisas</h3>
-                </div>
-                <div class="bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-700 space-y-3">
-                    <div class="grid grid-cols-2 gap-2 items-end">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">De</label>
-                            <select id="calc-from" onchange="ui.runCalculator()" class="w-full p-2 border rounded-lg bg-slate-700 border-slate-600 text-slate-100">
-                                <option value="USD">USD</option>
-                                <option value="VES">VES</option>
-                                <option value="USDT">USDT</option>
+            <div id="view-calculator" class="hidden animate-fade-in h-full flex flex-col justify-center">
+                <div class="glass-panel p-6 rounded-[2rem] border border-white/10 shadow-2xl relative">
+                    <h3 class="text-lg font-bold text-white mb-6 text-center">Conversor</h3>
+
+                    <!-- From -->
+                    <div class="relative z-10">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">De</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="calc-amount" oninput="ui.runCalculator()"
+                                class="w-2/3 input-modern p-4 rounded-xl text-2xl font-mono-num font-bold text-white focus:text-indigo-400 outline-none text-right placeholder-slate-600"
+                                placeholder="0.00">
+                            <select id="calc-from" onchange="ui.runCalculator()"
+                                class="w-1/3 input-modern rounded-xl px-3 text-white font-bold bg-slate-800">
+                                <option class="bg-slate-800" value="USD">USD</option>
+                                <option class="bg-slate-800" value="VES">VES</option>
+                                <option class="bg-slate-800" value="USDT">USDT</option>
                             </select>
-                        </div>
-                        <div class="relative">
-                             <input type="number" id="calc-amount" oninput="ui.runCalculator()" class="w-full p-2 border rounded-lg text-lg font-bold bg-slate-700 border-slate-600 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00">
                         </div>
                     </div>
 
-                    <div class="flex justify-center items-center my-2">
-                        <div class="w-full h-px bg-slate-700"></div>
-                        <button onclick="ui.swapCalculatorCurrencies()" class="p-2 rounded-full bg-slate-700 hover:bg-indigo-600 text-slate-300 hover:text-white transition mx-2">
-                            <i class="fas fa-exchange-alt"></i>
+                    <!-- Swap Button -->
+                    <div class="flex justify-center -my-3 relative z-20">
+                        <button onclick="ui.swapCalculatorCurrencies()"
+                            class="w-10 h-10 rounded-full bg-indigo-600 text-white shadow-lg border-4 border-[#151921] flex items-center justify-center hover:scale-110 transition">
+                            <i class="fas fa-exchange-alt text-sm"></i>
                         </button>
-                        <div class="w-full h-px bg-slate-700"></div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 items-end">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">A</label>
-                            <select id="calc-to" onchange="ui.runCalculator()" class="w-full p-2 border rounded-lg bg-slate-700 border-slate-600 text-slate-100">
-                                <option value="VES">VES</option>
-                                <option value="USD">USD</option>
-                                <option value="USDT">USDT</option>
+                    <!-- To -->
+                    <div class="relative z-10">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">A</label>
+                        <div class="flex gap-2">
+                            <select id="calc-to" onchange="ui.runCalculator()"
+                                class="w-1/3 input-modern rounded-xl px-3 text-white font-bold bg-slate-800">
+                                <option class="bg-slate-800" value="VES">VES</option>
+                                <option class="bg-slate-800" value="USD">USD</option>
+                                <option class="bg-slate-800" value="USDT">USDT</option>
                             </select>
-                        </div>
-                        <div>
-                             <p id="calc-result" class="w-full p-2 border rounded-lg text-lg font-bold bg-slate-900/50 border-slate-700 text-emerald-400 text-right">0.00</p>
+                            <div class="w-2/3 input-modern p-4 rounded-xl flex items-center justify-end bg-black/40">
+                                <p id="calc-result" class="text-2xl font-mono-num font-bold text-emerald-400">0.00</p>
+                            </div>
                         </div>
                     </div>
 
-                                        <div class="flex justify-center items-center gap-2 pt-2">
-                        <p id="calc-rate-info" class="text-xs text-slate-500 text-center"></p>
-                        <button onclick="ui.refreshRatesAndCalculate()" class="text-slate-400 hover:text-indigo-400 transition"><i class="fas fa-sync-alt"></i></button>
+                    <div class="flex justify-center items-center gap-2 mt-6">
+                        <p id="calc-rate-info" class="text-xs text-slate-500 font-mono"></p>
+                        <button onclick="ui.refreshRatesAndCalculate()"
+                            class="text-indigo-400 hover:text-white transition"><i
+                                class="fas fa-sync-alt text-xs"></i></button>
                     </div>
                 </div>
             </div>
 
             <!-- VISTA 3: WISHLIST -->
-            <div id="view-wishlist" class="space-y-4 hidden animate-fade-in">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="bg-indigo-600 w-1 h-6 rounded-r"></div>
-                        <h3 class="text-xl font-bold text-slate-200">Wishlist</h3>
-                    </div>
-                    <button onclick="ui.toggleWishlistForm()" class="text-xs bg-slate-800/80 text-indigo-300 px-3 py-1 rounded-full font-medium"><i class="fas fa-plus mr-1"></i> Añadir</button>
+            <div id="view-wishlist" class="hidden animate-fade-in space-y-4">
+                <div class="flex items-center justify-between px-2">
+                    <h3 class="text-xl font-bold text-white">Wishlist</h3>
+                    <button onclick="ui.toggleWishlistForm()"
+                        class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/20 hover:scale-105 transition"><i
+                            class="fas fa-plus"></i></button>
                 </div>
 
-                <!-- Formulario para añadir item -->
-                <div id="wishlist-form-container" class="hidden bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-700 space-y-3">
-                    <h4 class="text-md font-bold text-slate-300">Nuevo Artículo</h4>
-                    <input type="text" id="wish-product-name" placeholder="Nombre del producto" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="number" id="wish-price" placeholder="Precio" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100">
-                        <select id="wish-currency" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100">
-                            <option value="USD">USD</option>
-                            <option value="USDT">USDT</option>
-                            <option value="VES">VES</option>
+                <!-- Formulario -->
+                <div id="wishlist-form-container"
+                    class="hidden glass-panel p-4 rounded-2xl border border-white/5 space-y-3">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase">Nuevo Deseo</h4>
+                    <input type="text" id="wish-product-name" placeholder="¿Qué quieres comprar?"
+                        class="w-full input-modern p-3 rounded-xl text-white placeholder-slate-500">
+                    <div class="flex gap-3">
+                        <input type="number" id="wish-price" placeholder="Precio"
+                            class="w-2/3 input-modern p-3 rounded-xl text-white placeholder-slate-500">
+                        <select id="wish-currency" class="w-1/3 input-modern p-3 rounded-xl text-white bg-slate-800">
+                            <option class="bg-slate-800" value="USD">USD</option>
+                            <option class="bg-slate-800" value="USDT">USDT</option>
+                            <option class="bg-slate-800" value="VES">VES</option>
                         </select>
                     </div>
-                    <textarea id="wish-details" placeholder="Detalles" class="w-full p-2 border rounded bg-slate-700 border-slate-600 text-slate-100" rows="2"></textarea>
-                    <button onclick="app.addWishlistItem()" class="w-full bg-indigo-600/90 text-white py-2 rounded font-medium">Guardar</button>
+                    <textarea id="wish-details" placeholder="Notas adicionales..."
+                        class="w-full input-modern p-3 rounded-xl text-white placeholder-slate-500" rows="2"></textarea>
+                    <button onclick="app.addWishlistItem()"
+                        class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-500 transition">Añadir</button>
                 </div>
 
                 <!-- Lista de items -->
-                <div id="wishlist-items" class="space-y-3"></div>
+                <div id="wishlist-items" class="space-y-3 pb-20"></div>
             </div>
 
             <!-- VISTA 4: MOVIMIENTOS -->
-            <div id="view-transactions" class="space-y-4 hidden animate-fade-in h-full">
-                <!-- Header Sticky -->
-                <div class="flex items-center justify-between mb-4 sticky top-0 bg-slate-800-bg z-10 py-2">
+            <div id="view-transactions" class="hidden animate-fade-in h-full flex flex-col">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <h3 class="text-xl font-bold text-white">Historial</h3>
                     <div class="flex items-center gap-2">
-                        <div class="bg-indigo-600 w-1 h-6 rounded-r"></div>
-                        <h3 class="text-xl font-bold text-slate-700 dark:text-slate-200">Historial</h3>
-                    </div>
-                    <div class="flex gap-2">
                         <span id="filtered-total"
-                            class="text-xs font-mono font-bold text-slate-300 bg-slate-800/50 px-2 py-1 rounded-lg"></span>
+                            class="text-xs font-mono-num font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg"></span>
                         <button onclick="ui.toggleFilters()"
-                            class="text-xs bg-slate-800/80 text-indigo-300 px-3 py-1 rounded-full font-medium hover:bg-slate-800/75 transition backdrop-blur-sm hover:backdrop-blur-md">
-                            <i class="fas fa-filter mr-1"></i> Filtros
+                            class="w-8 h-8 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center border border-white/5 hover:bg-slate-700 transition">
+                            <i class="fas fa-filter text-xs"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- PANEL DE FILTROS -->
-                <div id="filter-panel"
-                    class="hidden bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-sm border border-slate-700 p-4 mb-4 space-y-3">
+                <div id="filter-panel" class="hidden glass-panel p-4 rounded-2xl mb-4 space-y-3 border border-white/5">
                     <div class="relative">
-                        <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                        <input type="text" id="filter-search" oninput="ui.applyFilters()"
-                            placeholder="Buscar descripción..."
-                            class="w-full pl-8 p-2 text-sm border rounded-lg bg-slate-800 border-slate-700 text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <i class="fas fa-search absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+                        <input type="text" id="filter-search" oninput="ui.applyFilters()" placeholder="Buscar..."
+                            class="w-full pl-9 input-modern p-3 rounded-xl text-sm text-white placeholder-slate-500">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Desde</label><input
-                                type="date" id="filter-date-start" onchange="ui.applyFilters()"
-                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                        <div id="filter-date-start-container">
+                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Desde</label>
                         </div>
-                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Hasta</label><input
-                                type="date" id="filter-date-end" onchange="ui.applyFilters()"
-                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                        <div id="filter-date-end-container">
+                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Hasta</label>
                         </div>
                     </div>
-                    <div class="flex gap-2 justify-between">
+
+                    <div class="flex gap-2 p-1 bg-black/20 rounded-xl">
                         <button onclick="ui.setFilterDate('week')"
-                            class="text-[10px] flex-1 bg-slate-800 hover:bg-indigo-900/20 text-slate-300 py-1 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Semana</button>
+                            class="flex-1 py-1.5 text-[10px] rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition">Semana</button>
                         <button onclick="ui.setFilterDate('fortnight')"
-                            class="text-[10px] flex-1 bg-slate-800 hover:bg-indigo-900/20 text-slate-300 py-1 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Quincena</button>
+                            class="flex-1 py-1.5 text-[10px] rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition">Quincena</button>
                         <button onclick="ui.setFilterDate('month')"
-                            class="text-[10px] flex-1 bg-slate-800 hover:bg-indigo-900/20 text-slate-300 py-1 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Mes</button>
+                            class="flex-1 py-1.5 text-[10px] rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition">Mes</button>
                     </div>
+
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Tipo</label><select
-                                id="filter-type" onchange="ui.applyFilters()"
-                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
-                                <option value="ALL">Todos</option>
-                                <option value="INCOME">Ingresos</option>
-                                <option value="EXPENSE">Gastos</option>
-                            </select></div>
-                        <div><label class="text-[10px] uppercase font-bold text-slate-400">Categoría</label><select
-                                id="filter-bucket" onchange="ui.applyFilters()"
-                                class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
-                                <option value="ALL">Todas</option>
-                            </select></div>
+                        <select id="filter-type" onchange="ui.applyFilters()"
+                            class="w-full input-modern p-2 rounded-xl text-xs text-white bg-slate-800">
+                            <option class="bg-slate-800" value="ALL">Tipo: Todos</option>
+                            <option class="bg-slate-800" value="INCOME">Ingresos</option>
+                            <option class="bg-slate-800" value="EXPENSE">Gastos</option>
+                        </select>
+                        <select id="filter-bucket" onchange="ui.applyFilters()"
+                            class="w-full input-modern p-2 rounded-xl text-xs text-white bg-slate-800">
+                            <option class="bg-slate-800" value="ALL">Cat: Todas</option>
+                        </select>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <input type="number" id="filter-min" oninput="ui.applyFilters()" placeholder="Min $"
-                            class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                            class="w-full input-modern p-2 rounded-xl text-xs text-white">
                         <input type="number" id="filter-max" oninput="ui.applyFilters()" placeholder="Max $"
-                            class="w-full p-1.5 text-xs border rounded bg-slate-800 border-slate-700 text-slate-100">
+                            class="w-full input-modern p-2 rounded-xl text-xs text-white">
                     </div>
+
                     <button onclick="ui.clearFilters()"
-                        class="w-full py-2 text-xs text-rose-500 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition backdrop-blur-sm hover:backdrop-blur-md">Limpiar
-                        Filtros</button>
+                        class="w-full py-2 text-xs text-rose-400 font-bold hover:text-rose-300 transition">Limpiar
+                        todo</button>
                 </div>
 
-                <!-- Contenedor de lista -->
-                <div
-                    class="bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-md border border-slate-700 overflow-hidden min-h-[50vh]">
-                    <div id="transactions-list" class="divide-y divide-slate-100 dark:divide-slate-700"></div>
+                <!-- Lista Transacciones -->
+                <div class="flex-1 overflow-y-auto hide-scrollbar rounded-2xl bg-black/20 border border-white/5">
+                    <div id="transactions-list" class="divide-y divide-white/5"></div>
                 </div>
-                <div class="h-20"></div>
             </div>
 
         </div>
     </main>
 
-    <!-- BOTTOM NAV BAR -->
-    <nav class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-700 shadow-lg z-50 pb-safe">
-        <div class="max-w-md mx-auto flex justify-around items-center h-16">
-            <button onclick="ui.switchView('home')" id="nav-btn-home" class="flex flex-col items-center justify-center w-full h-full text-indigo-400 transition-colors">
-                <i class="fas fa-home text-xl mb-1"></i>
-                <span class="text-[10px] font-medium">Inicio</span>
+    <!-- BOTTOM NAV BAR (Floating Dock Style) -->
+    <nav class="fixed bottom-6 left-0 right-0 z-50 px-4 pointer-events-none">
+        <div
+            class="pointer-events-auto max-w-xs mx-auto glass-panel rounded-full shadow-2xl shadow-black/50 flex justify-between items-center px-6 py-4 border border-white/10">
+
+            <button onclick="ui.switchView('home')" id="nav-btn-home"
+                class="group relative flex items-center justify-center text-indigo-400">
+                <i class="fas fa-home text-lg group-hover:scale-110 transition duration-300"></i>
+                <span
+                    class="absolute -bottom-6 text-[9px] opacity-0 group-hover:opacity-100 transition-opacity text-indigo-300">Inicio</span>
             </button>
-            <button onclick="ui.switchView('calculator')" id="nav-btn-calculator" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-indigo-400 transition-colors">
-                <i class="fas fa-calculator text-xl mb-1"></i>
-                <span class="text-[10px] font-medium">Calculadora</span>
+
+            <button onclick="ui.switchView('calculator')" id="nav-btn-calculator"
+                class="group relative flex items-center justify-center text-slate-500 hover:text-indigo-400 transition-colors">
+                <i class="fas fa-calculator text-lg group-hover:scale-110 transition duration-300"></i>
             </button>
-            <button onclick="ui.switchView('wishlist')" id="nav-btn-wishlist" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-indigo-400 transition-colors">
-                <i class="fas fa-list-alt text-xl mb-1"></i>
-                <span class="text-[10px] font-medium">Wishlist</span>
+
+            <button onclick="ui.switchView('wishlist')" id="nav-btn-wishlist"
+                class="group relative flex items-center justify-center text-slate-500 hover:text-indigo-400 transition-colors">
+                <i class="fas fa-heart text-lg group-hover:scale-110 transition duration-300"></i>
             </button>
-            <button onclick="ui.switchView('transactions')" id="nav-btn-transactions" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-indigo-400 transition-colors">
-                <i class="fas fa-list-ul text-xl mb-1"></i>
-                <span class="text-[10px] font-medium">Historial</span>
+
+            <button onclick="ui.switchView('transactions')" id="nav-btn-transactions"
+                class="group relative flex items-center justify-center text-slate-500 hover:text-indigo-400 transition-colors">
+                <i class="fas fa-history text-lg group-hover:scale-110 transition duration-300"></i>
             </button>
+
         </div>
     </nav>
 
-    <!-- MODALES -->
-    <div id="transaction-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div <div
-            class="bg-slate-900/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl transform transition-transform duration-300 border border-slate-700">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="modal-title" class="text-lg font-bold">Registrar</h3>
-                <button onclick="ui.closeModal()" class="text-slate-400 hover:text-slate-600"><i
+    <!-- === MODALES === -->
+
+    <!-- MODAL TRANSACCIÓN (Income/Expense) -->
+    <div id="transaction-modal" class="fixed inset-0 z-[60] hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="ui.closeModal()"></div>
+
+        <!-- Content -->
+        <div
+            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-[#151921] rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl border-t sm:border border-white/10 transform transition-all animate-slide-up">
+
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modal-title" class="text-xl font-bold text-white">Registrar</h3>
+                <button onclick="ui.closeModal()"
+                    class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400"><i
                         class="fas fa-times"></i></button>
             </div>
+
             <form id="tx-form" onsubmit="app.addTransactionWrapper(event)">
                 <input type="hidden" id="tx-type">
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Monto</label>
+
+                <div class="mb-5">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Monto</label>
                     <div class="relative">
                         <span id="modal-currency-symbol"
-                            class="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
+                            class="absolute left-4 top-4 text-slate-400 font-bold text-lg">$</span>
                         <input type="number" id="tx-amount" step="0.01"
-                            class="w-full pl-8 p-3 border border-slate-600 rounded-xl text-xl font-bold bg-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            class="w-full pl-10 input-modern p-4 rounded-2xl text-3xl font-mono-num font-bold text-white placeholder-slate-700"
                             placeholder="0.00" required>
                     </div>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Descripción</label>
+
+                <div class="mb-5">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Descripción</label>
                     <input type="text" id="tx-desc"
-                        class="w-full p-3 border border-slate-600 rounded-xl bg-slate-800 text-slate-100" required>
+                        class="w-full input-modern p-4 rounded-xl text-white placeholder-slate-600" required>
                 </div>
-                <div class="grid grid-cols-2 gap-3 mb-6">
+
+                <div class="grid grid-cols-2 gap-4 mb-8">
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Cuenta</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Cuenta</label>
                         <select id="tx-account" onchange="ui.updateModalCurrency()"
-                            class="w-full p-2 border rounded-lg bg-slate-800 text-slate-100 text-sm" required></select>
+                            class="w-full input-modern p-3 rounded-xl text-white text-sm bg-slate-800"
+                            required></select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 mb-1">Bucket</label>
-                        <select id="tx-bucket" class="w-full p-2 border rounded-lg bg-slate-800 text-slate-100 text-sm"
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Categoría</label>
+                        <select id="tx-bucket"
+                            class="w-full input-modern p-3 rounded-xl text-white text-sm bg-slate-800"
                             required></select>
                     </div>
                 </div>
+
                 <button type="submit"
-                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Guardar</button>
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-600/20 transition transform active:scale-95">
+                    Guardar Movimiento
+                </button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL DE TRANSFERENCIA -->
-    <div id="transfer-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+    <!-- MODAL TRANSFERENCIA -->
+    <div id="transfer-modal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onclick="document.getElementById('transfer-modal').classList.add('hidden')"></div>
         <div
-            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-blue-600 dark:text-blue-400"><i
-                        class="fas fa-exchange-alt mr-2"></i>Transferencia</h3>
+            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-[#151921] rounded-t-[2rem] sm:rounded-[2rem] p-6 border-t sm:border border-white/10">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">Transferir</h3>
                 <button onclick="document.getElementById('transfer-modal').classList.add('hidden')"
-                    class="text-slate-400"><i class="fas fa-times"></i></button>
+                    class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
             </div>
+
             <form onsubmit="app.executeTransfer(event)">
-                <div
-                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mb-3 border border-slate-100 dark:border-slate-700">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Desde</label>
+                <div class="bg-black/20 p-4 rounded-2xl border border-white/5 mb-4">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Origen</label>
                     <select id="t-source" onchange="ui.calcTransfer()"
-                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
-                    <div class="mt-2 relative">
-                        <input type="number" id="t-amount" oninput="ui.calcTransfer()" step="0.01"
-                            class="w-full p-2 pl-2 border rounded dark:bg-slate-700/50 dark:text-white bg-slate-800/50"
-                            placeholder="Monto" required>
+                        class="w-full bg-transparent text-white font-bold outline-none mt-1 border-b border-white/10 pb-2 mb-2"></select>
+                    <input type="number" id="t-amount" oninput="ui.calcTransfer()" step="0.01"
+                        class="w-full bg-transparent text-2xl font-mono-num font-bold text-white outline-none placeholder-slate-700"
+                        placeholder="0.00" required>
+                </div>
+
+                <div class="flex justify-center -my-7 relative z-10">
+                    <div
+                        class="w-10 h-10 rounded-full bg-[#151921] border border-white/10 flex items-center justify-center text-indigo-400 shadow-xl">
+                        <i class="fas fa-arrow-down"></i>
                     </div>
                 </div>
-                <div class="flex justify-center -my-5 relative z-10">
-                    <div class="bg-slate-800 dark:bg-slate-600 rounded-full p-2 shadow border dark:border-slate-500"><i
-                            class="fas fa-arrow-down text-slate-400 dark:text-slate-200"></i></div>
-                </div>
-                <div
-                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mt-3 mb-4 border border-slate-100 dark:border-slate-700">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Hacia</label>
+
+                <div class="bg-black/20 p-4 rounded-2xl border border-white/5 mt-4 mb-6">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Destino</label>
                     <select id="t-target" onchange="ui.calcTransfer()"
-                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
-                    <div class="mt-2">
-                        <p class="text-xs text-slate-400">Recibirás:</p>
-                        <p id="t-result" class="text-lg font-bold text-emerald-600 dark:text-emerald-400">0.00</p>
-                        <p id="t-rate-info" class="text-[10px] text-slate-400 italic"></p>
-                    </div>
+                        class="w-full bg-transparent text-white font-bold outline-none mt-1 border-b border-white/10 pb-2 mb-2"></select>
+                    <p class="text-[10px] text-slate-500">Recibirás (Aprox):</p>
+                    <p id="t-result" class="text-xl font-mono-num font-bold text-emerald-400">0.00</p>
+                    <p id="t-rate-info" class="text-[9px] text-slate-500 italic mt-1"></p>
                 </div>
+
                 <button type="submit"
-                    class="w-full bg-blue-600/90 hover:bg-blue-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar</button>
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-600/20 transition transform active:scale-95">Confirmar</button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL TRANSFERENCIA DE BUCKETS -->
-    <div id="bucket-transfer-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+    <!-- MODAL TRANSFERENCIA BUCKETS -->
+    <div id="bucket-transfer-modal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onclick="document.getElementById('bucket-transfer-modal').classList.add('hidden')"></div>
         <div
-            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-indigo-500 dark:text-indigo-400"><i
-                        class="fas fa-exchange-alt mr-2"></i>Mover Presupuesto</h3>
+            class="absolute bottom-0 left-0 right-0 sm:top-1/2 sm:left-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-[#151921] rounded-t-[2rem] sm:rounded-[2rem] p-6 border-t sm:border border-white/10">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">Mover Presupuesto</h3>
                 <button onclick="document.getElementById('bucket-transfer-modal').classList.add('hidden')"
                     class="text-slate-400"><i class="fas fa-times"></i></button>
             </div>
             <form onsubmit="app.executeBucketTransfer(event)">
-                <div
-                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mb-3 border border-slate-100 dark:border-slate-700">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Sacar de:</label>
+                <div class="bg-black/20 p-4 rounded-2xl border border-white/5 mb-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">De</label>
                     <select id="bt-source"
-                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                        class="w-full bg-transparent text-white font-bold outline-none mt-1"></select>
                 </div>
-                <div class="flex justify-center -my-5 relative z-10">
-                    <div class="bg-slate-800 dark:bg-slate-600 rounded-full p-2 shadow border dark:border-slate-500"><i
-                            class="fas fa-arrow-down text-slate-400 dark:text-slate-200"></i></div>
+                <div class="flex justify-center -my-4 relative z-10"><i class="fas fa-arrow-down text-slate-600"></i>
                 </div>
-                <div
-                    class="bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-xl mt-3 mb-4 border border-slate-100 dark:border-slate-700">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Mover a:</label>
+                <div class="bg-black/20 p-4 rounded-2xl border border-white/5 mt-2 mb-4">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">A</label>
                     <select id="bt-target"
-                        class="w-full bg-transparent font-semibold dark:text-white outline-none mt-1"></select>
+                        class="w-full bg-transparent text-white font-bold outline-none mt-1"></select>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Monto a mover</label>
+                <div class="mb-6">
                     <input type="number" id="bt-amount" step="0.01"
-                        class="w-full p-3 border border-slate-600 rounded-xl text-xl font-bold bg-slate-800 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        class="w-full input-modern p-4 rounded-2xl text-2xl font-mono-num font-bold text-white placeholder-slate-700 text-center"
                         placeholder="0.00" required>
                 </div>
-                <button type="submit"
-                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar
-                    Movimiento</button>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">Mover</button>
             </form>
         </div>
     </div>
 
     <!-- MODAL EDITAR CUENTA -->
-    <div id="edit-account-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div
-            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+    <div id="edit-account-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onclick="document.getElementById('edit-account-modal').classList.add('hidden')"></div>
+        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 id="edit-account-title" class="text-lg font-bold text-indigo-500 dark:text-indigo-400"><i
-                        class="fas fa-edit mr-2"></i>Editar Cuenta</h3>
+                <h3 id="edit-account-title" class="text-lg font-bold text-white">Editar Cuenta</h3>
                 <button onclick="document.getElementById('edit-account-modal').classList.add('hidden')"
                     class="text-slate-400"><i class="fas fa-times"></i></button>
             </div>
             <form onsubmit="app.updateAccountWrapper(event)">
                 <input type="hidden" id="edit-account-id">
                 <input type="hidden" id="edit-account-type">
-                <div class="mb-3">
-                    <label class="text-xs font-bold text-slate-400 uppercase">Nombre</label>
-                    <input type="text" id="edit-account-name"
-                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100" required>
-                </div>
-                <div class="mb-3">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Moneda</label>
-                    <select id="edit-account-currency"
-                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
-                        <option value="USD">USD</option>
-                        <option value="VES">VES</option>
-                        <option value="USDT">USDT</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Saldo</label>
-                    <input type="number" id="edit-account-balance" step="0.01"
-                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
-                </div>
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase">Inicio</label>
-                        <input type="date" id="edit-account-start"
-                            class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                <div class="space-y-3">
+                    <input type="text" id="edit-account-name" class="w-full input-modern p-3 rounded-xl text-white"
+                        required>
+                    <div class="flex gap-2">
+                        <input type="number" id="edit-account-balance" step="0.01"
+                            class="w-2/3 input-modern p-3 rounded-xl text-white" placeholder="Balance">
+                        <select id="edit-account-currency"
+                            class="w-1/3 input-modern p-3 rounded-xl text-white bg-slate-800">
+                            <option class="bg-slate-800" value="USD">USD</option>
+                            <option class="bg-slate-800" value="VES">VES</option>
+                            <option class="bg-slate-800" value="USDT">USDT</option>
+                        </select>
                     </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase">Vencimiento</label>
-                        <input type="date" id="edit-account-due"
-                            class="w-full p-1.5 border rounded text-xs dark:bg-slate-700/50 dark:border-slate-600 dark:text-white">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div id="edit-account-start-container">
+                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
+                        </div>
+                        <div id="edit-account-due-container">
+                            <label class="text-[9px] uppercase font-bold text-slate-500 ml-1">Vence</label>
+                        </div>
                     </div>
                 </div>
-                <button type="submit"
-                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-bold py-3 rounded-xl shadow-lg">Guardar
-                    cambios</button>
+                <button type="submit" class="w-full mt-6 bg-indigo-600 text-white font-bold py-3 rounded-xl">Guardar
+                    Cambios</button>
             </form>
         </div>
     </div>
 
     <!-- MODAL EDITAR BUCKET -->
-    <div id="edit-bucket-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div
-            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-indigo-500 dark:text-indigo-400"><i
-                        class="fas fa-edit mr-2"></i>Editar Bucket</h3>
-                <button onclick="document.getElementById('edit-bucket-modal').classList.add('hidden')"
-                    class="text-slate-400"><i class="fas fa-times"></i></button>
-            </div>
+    <div id="edit-bucket-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onclick="document.getElementById('edit-bucket-modal').classList.add('hidden')"></div>
+        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4">Editar Bucket</h3>
             <form onsubmit="app.updateBucketWrapper(event)">
                 <input type="hidden" id="edit-bucket-id">
-                <div class="mb-3">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Nombre</label>
-                    <input type="text" id="edit-bucket-name"
-                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100" required>
-                </div>
-                <div class="mb-3">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Saldo</label>
-                    <input type="number" id="edit-bucket-balance" step="0.01"
-                        class="w-full p-2 border rounded text-sm bg-slate-800 border-slate-700 text-slate-100">
-                </div>
+                <input type="text" id="edit-bucket-name" class="w-full input-modern p-3 rounded-xl text-white mb-3"
+                    required>
+                <input type="number" id="edit-bucket-balance" step="0.01"
+                    class="w-full input-modern p-3 rounded-xl text-white mb-4">
                 <button type="submit"
-                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-bold py-3 rounded-xl shadow-lg">Guardar
-                    cambios</button>
+                    class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">Actualizar</button>
             </form>
         </div>
     </div>
-    <!-- MODAL MENSAJE -->
-    <div id="message-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div
-            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
+
+    <!-- MODAL WISHLIST EDIT -->
+    <div id="wishlist-edit-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="ui.closeWishlistEditModal()"></div>
+        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 id="message-title" class="text-lg font-bold text-white dark:text-white">Aviso</h3>
-                <button onclick="ui.hideMessageModal()" class="text-slate-400"><i class="fas fa-times"></i></button>
+                <h3 class="text-lg font-bold text-white">Editar Deseo</h3>
+                <button onclick="ui.closeWishlistEditModal()" class="text-slate-400"><i
+                        class="fas fa-times"></i></button>
             </div>
-            <p id="message-text" class="mb-4 text-white dark:text-slate-200"></p>
-            <div class="flex justify-end">
-                <button onclick="ui.hideMessageModal()"
-                    class="w-full bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-bold py-3 rounded-xl shadow-lg">Aceptar</button>
-            </div>
+            <form id="wishlist-edit-form">
+                <input type="hidden" id="wish-edit-id">
+                <div class="space-y-3">
+                    <input type="text" id="wish-edit-product-name"
+                        class="w-full input-modern p-3 rounded-xl text-white">
+                    <div class="flex gap-2">
+                        <input type="number" id="wish-edit-price" class="w-2/3 input-modern p-3 rounded-xl text-white">
+                        <select id="wish-edit-currency"
+                            class="w-1/3 input-modern p-3 rounded-xl text-white bg-slate-800">
+                            <option class="bg-slate-800" value="USD">USD</option>
+                            <option class="bg-slate-800" value="USDT">USDT</option>
+                            <option class="bg-slate-800" value="VES">VES</option>
+                        </select>
+                    </div>
+                    <textarea id="wish-edit-details" class="w-full input-modern p-3 rounded-xl text-white"
+                        rows="2"></textarea>
+                    <button type="submit"
+                        class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Actualizar</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMACIÓN -->
-    <div id="confirm-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div
-            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="confirm-title" class="text-lg font-bold text-white dark:text-white">Confirmar</h3>
-                <button onclick="ui.hideConfirmModal()" class="text-slate-400"><i class="fas fa-times"></i></button>
-            </div>
-            <p id="confirm-text" class="mb-4 text-white dark:text-slate-200">¿Está seguro?</p>
-            <div class="flex justify-end gap-2">
-                <button onclick="ui.hideConfirmModal()"
-                    class="px-4 py-2 bg-rose-100 text-rose-700 rounded-md hover:bg-rose-200 backdrop-blur-sm hover:backdrop-blur-md">Cancelar</button>
-                <button id="confirm-ok-btn"
-                    class="px-4 py-2 bg-indigo-600/90 text-white rounded-md backdrop-blur-sm hover:backdrop-blur-md transition">Aceptar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL LIQUIDAR -->
-    <div id="settle-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div
-            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md w-full max-w-md rounded-2xl p-6 shadow-2xl border dark:border-slate-700">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="settle-title" class="text-lg font-bold text-white dark:text-white">Registrar Pago</h3>
-                <button onclick="document.getElementById('settle-modal').classList.add('hidden')"
-                    class="text-slate-400"><i class="fas fa-times"></i></button>
-            </div>
+    <!-- MODAL LIQUIDAR (Settle) -->
+    <div id="settle-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onclick="document.getElementById('settle-modal').classList.add('hidden')"></div>
+        <div class="relative w-full max-w-md bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl">
+            <h3 id="settle-title" class="text-lg font-bold text-white mb-4">Liquidar</h3>
             <form onsubmit="app.executeSettle(event)">
                 <input type="hidden" id="settle-id">
                 <input type="hidden" id="settle-type">
 
-                <div class="bg-slate-800/50 p-4 rounded-xl mb-4 text-center border border-slate-700">
-                    <p class="text-xs text-slate-500 uppercase mb-1" id="settle-label-account">Cuenta</p>
-                    <p class="text-xl font-bold text-white dark:text-white" id="settle-account-name">---</p>
-                    <p class="text-sm font-mono text-slate-500" id="settle-account-balance">---</p>
+                <div class="bg-black/20 p-4 rounded-xl mb-4 text-center border border-white/5">
+                    <p class="text-[10px] text-slate-500 uppercase mb-1" id="settle-label-account">Cuenta</p>
+                    <p class="text-xl font-bold text-white" id="settle-account-name">---</p>
+                    <p class="text-sm font-mono text-emerald-400" id="settle-account-balance">---</p>
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-xs font-medium text-slate-500 mb-1" id="settle-label-amount">Monto a
-                        Liquidar</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2"
+                        id="settle-label-amount">Monto</label>
                     <input type="number" id="settle-amount" step="0.01"
-                        class="w-full p-3 border border-slate-600 rounded-xl text-xl font-bold bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        class="w-full input-modern p-3 rounded-xl text-xl font-bold text-white placeholder-slate-600"
                         required>
                 </div>
 
                 <div class="mb-6">
-                    <label class="block text-xs font-medium text-slate-500 mb-1" id="settle-label-source">Origen de
-                        Fondos</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2"
+                        id="settle-label-source">Origen</label>
                     <select id="settle-source"
-                        class="w-full p-3 border border-slate-600 rounded-xl bg-slate-800 text-slate-100 text-sm"
-                        required></select>
+                        class="w-full input-modern p-3 rounded-xl text-white bg-slate-800 text-sm" required></select>
                 </div>
 
                 <button type="submit" id="settle-btn"
-                    class="w-full bg-emerald-600/90 hover:bg-emerald-700/90 backdrop-blur-sm text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">Confirmar</button>
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg">Confirmar
+                    Pago</button>
             </form>
         </div>
     </div>
 
-    <!-- LOGIC -->
-    <script src="js/Database.js"></script>
+    <!-- MODAL MENSAJE (Alert) -->
+    <div id="message-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center px-6">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div
+            class="relative w-full max-w-xs bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl text-center">
+            <div
+                class="w-12 h-12 rounded-full bg-slate-800 mx-auto mb-4 flex items-center justify-center text-indigo-400">
+                <i class="fas fa-info"></i>
+            </div>
+            <h3 id="message-title" class="text-lg font-bold text-white mb-2">Aviso</h3>
+            <p id="message-text" class="text-sm text-slate-400 mb-6"></p>
+            <button onclick="ui.hideMessageModal()"
+                class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-xl font-medium">Entendido</button>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR -->
+    <div id="confirm-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center px-6">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div
+            class="relative w-full max-w-xs bg-[#151921] rounded-2xl p-6 border border-white/10 shadow-2xl text-center">
+            <div
+                class="w-12 h-12 rounded-full bg-rose-900/20 mx-auto mb-4 flex items-center justify-center text-rose-500">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 id="confirm-title" class="text-lg font-bold text-white mb-2">Confirmar</h3>
+            <p id="confirm-text" class="text-sm text-slate-400 mb-6">¿Estás seguro?</p>
+            <div class="flex gap-3">
+                <button onclick="ui.hideConfirmModal()"
+                    class="flex-1 bg-slate-800 text-slate-300 py-2 rounded-xl text-sm">Cancelar</button>
+                <button id="confirm-ok-btn"
+                    class="flex-1 bg-rose-600 text-white py-2 rounded-xl text-sm font-bold shadow-lg shadow-rose-600/20">Sí,
+                    eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../common/js/DatePicker.js"></script>
     <script src="js/core.js"></script>
+    <script src="js/Database.js"></script>
+    <script src="js/main.js"></script>
     <script src="js/ui.js"></script>
 
-    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            new DatePicker('receivable-date', '#new-receivable-date-container');
+            new DatePicker('receivable-due', '#new-receivable-due-container');
+            new DatePicker('liability-date', '#new-liability-date-container');
+            new DatePicker('liability-due', '#new-liability-due-container');
+            new DatePicker('filter-start', '#filter-date-start-container');
+            new DatePicker('filter-end', '#filter-date-end-container');
+            new DatePicker('edit-account-start', '#edit-account-start-container');
+            new DatePicker('edit-account-due', '#edit-account-due-container');
+        });
+    </script>
+
 </body>
 
 </html>

@@ -225,6 +225,20 @@ class denarius {
         }
     }
 
+    async updateWishlistItem(id, data) {
+        try {
+            const response = await fetch(`${this.db.baseUrl}/wishlist/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) throw new Error('Error al actualizar el artículo');
+            ui.renderWishlist(); // Re-render to show changes
+        } catch (error) {
+            ui.showMessageModal('Error', error.message);
+        }
+    }
+
     async deleteWishlistItem(id) {
         try {
             const response = await fetch(`${this.db.baseUrl}/wishlist/${id}`, {

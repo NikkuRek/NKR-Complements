@@ -14,8 +14,10 @@ const API_BASE_URL = 'http://localhost:3000/api';
             const name = document.getElementById(`new-${type}-name`).value;
             const curr = document.getElementById(`new-${type}-currency`).value;
             const initBal = document.getElementById(`new-${type}-init`).value;
-            const startDate = document.getElementById(`new-${type}-date`)?.value;
-            const dueDate = document.getElementById(`new-${type}-due`)?.value;
+            const startDateEl = document.getElementById(`${type.toLowerCase()}-date`);
+            const dueDateEl = document.getElementById(`${type.toLowerCase()}-due`);
+            const startDate = startDateEl ? startDateEl.dataset.isoDate : null;
+            const dueDate = dueDateEl ? dueDateEl.dataset.isoDate : null;
 
             if (!name) { ui.showAlert("Requerido"); return; }
             try {
@@ -27,8 +29,14 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
             document.getElementById(`new-${type}-name`).value = '';
             document.getElementById(`new-${type}-init`).value = '';
-            if (startDate) document.getElementById(`new-${type}-date`).value = '';
-            if (dueDate) document.getElementById(`new-${type}-due`).value = '';
+            if (startDateEl) {
+                startDateEl.value = '';
+                startDateEl.dataset.isoDate = '';
+            }
+            if (dueDateEl) {
+                dueDateEl.value = '';
+                dueDateEl.dataset.isoDate = '';
+            }
         };
         app.handleCreateBucket = async () => {
             const name = document.getElementById('new-BUCKET-name').value;
@@ -56,8 +64,8 @@ const API_BASE_URL = 'http://localhost:3000/api';
             const name = document.getElementById('edit-account-name').value.trim();
             const currency = document.getElementById('edit-account-currency').value;
             const balance = parseFloat(document.getElementById('edit-account-balance').value) || 0;
-            const start = document.getElementById('edit-account-start').value || null;
-            const due = document.getElementById('edit-account-due').value || null;
+            const start = document.getElementById('edit-account-start')?.dataset.isoDate || null;
+            const due = document.getElementById('edit-account-due')?.dataset.isoDate || null;
             try {
                 await app.updateAccount(id, { name, currency, balance, startDate: start, dueDate: due });
                 ui.renderCRUD(type);

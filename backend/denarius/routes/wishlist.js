@@ -38,4 +38,19 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// PUT /api/wishlist/:id
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { product_name, price, currency, details } = req.body;
+    await pool.query(
+      'UPDATE wishlist SET product_name = ?, price = ?, currency = ?, details = ? WHERE id = ?',
+      [product_name, price, currency, details, id]
+    );
+    res.json({ updated: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

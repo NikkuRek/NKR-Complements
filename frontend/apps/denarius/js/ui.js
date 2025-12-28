@@ -13,6 +13,19 @@ const ui = {
 
         ui.renderAll();
         ui.switchView('home');
+
+        document.getElementById('wishlist-edit-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const id = document.getElementById('wish-edit-id').value;
+            const data = {
+                product_name: document.getElementById('wish-edit-product-name').value,
+                price: parseFloat(document.getElementById('wish-edit-price').value),
+                currency: document.getElementById('wish-edit-currency').value,
+                details: document.getElementById('wish-edit-details').value
+            };
+            await app.updateWishlistItem(id, data);
+            ui.closeWishlistEditModal();
+        });
     },
     switchView: (viewName) => {
         ui.currentView = viewName;
@@ -156,7 +169,7 @@ const ui = {
 
     refreshRatesAndCalculate: async () => {
         const btn = document.querySelector('#view-calculator button i.fa-sync-alt');
-        if(btn) btn.classList.add('animate-spin');
+        if (btn) btn.classList.add('animate-spin');
 
         try {
             await Promise.all([
@@ -168,7 +181,7 @@ const ui = {
             console.error('Error refreshing rates:', error);
             ui.showAlert('No se pudieron actualizar las tasas.');
         } finally {
-            if(btn) btn.classList.remove('animate-spin');
+            if (btn) btn.classList.remove('animate-spin');
         }
     },
 
@@ -180,7 +193,32 @@ const ui = {
         toSelect.value = temp;
         ui.runCalculator();
     },
-    
+
+    openWishlistEditModal: async (id) => {
+        try {
+            const response = await fetch(`${app.db.baseUrl}/wishlist`);
+            if (!response.ok) throw new Error('Error al cargar la wishlist');
+            const wishlist = await response.json();
+            const item = wishlist.find(i => i.id == id);
+            if (!item) {
+                ui.showAlert('Artículo no encontrado');
+                return;
+            }
+            document.getElementById('wish-edit-id').value = item.id;
+            document.getElementById('wish-edit-product-name').value = item.product_name;
+            document.getElementById('wish-edit-price').value = item.price;
+            document.getElementById('wish-edit-currency').value = item.currency;
+            document.getElementById('wish-edit-details').value = item.details;
+            document.getElementById('wishlist-edit-modal').classList.remove('hidden');
+        } catch (error) {
+            ui.showAlert(error.message);
+        }
+    },
+
+    closeWishlistEditModal: () => {
+        document.getElementById('wishlist-edit-modal').classList.add('hidden');
+    },
+
     toggleWishlistForm: (force) => {
         const container = document.getElementById('wishlist-form-container');
         if (typeof force === 'boolean') {
@@ -188,6 +226,31 @@ const ui = {
         } else {
             container.classList.toggle('hidden');
         }
+    },
+
+    openWishlistEditModal: async (id) => {
+        try {
+            const response = await fetch(`${app.db.baseUrl}/wishlist`);
+            if (!response.ok) throw new Error('Error al cargar la wishlist');
+            const wishlist = await response.json();
+            const item = wishlist.find(i => i.id == id);
+            if (!item) {
+                ui.showAlert('Artículo no encontrado');
+                return;
+            }
+            document.getElementById('wish-edit-id').value = item.id;
+            document.getElementById('wish-edit-product-name').value = item.product_name;
+            document.getElementById('wish-edit-price').value = item.price;
+            document.getElementById('wish-edit-currency').value = item.currency;
+            document.getElementById('wish-edit-details').value = item.details;
+            document.getElementById('wishlist-edit-modal').classList.remove('hidden');
+        } catch (error) {
+            ui.showAlert(error.message);
+        }
+    },
+
+    closeWishlistEditModal: () => {
+        document.getElementById('wishlist-edit-modal').classList.add('hidden');
     },
 
     renderWishlist: async () => {
@@ -221,7 +284,11 @@ const ui = {
                                 ${priceInVes}
                                 <p class="text-xs text-slate-400 mt-1">${item.details || ''}</p>
                             </div>
-                            <button onclick="app.deleteWishlistItem('${item.id}')" class="text-rose-500 hover:text-rose-400"><i class="fas fa-trash"></i></button>
+                            <div class="flex gap-3">
+                                <button onclick="ui.openWishlistEditModal('${item.id}')" class="text-indigo-400 hover:text-indigo-300"><i class="fas fa-edit"></i></button>
+                                <button onclick="app.deleteWishlistItem('${item.id}')" class="text-rose-500 hover:text-rose-400"><i class="fas fa-trash"></i></button>
+                            </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -249,8 +316,14 @@ const ui = {
         document.getElementById('edit-account-name').value = acc.name;
         document.getElementById('edit-account-currency').value = acc.currency;
         document.getElementById('edit-account-balance').value = acc.balance;
-        document.getElementById('edit-account-start').value = acc.startDate || '';
-        document.getElementById('edit-account-due').value = acc.dueDate || '';
+
+        if (window.datePickers && window.datePickers['edit-account-start']) {
+            window.datePickers['edit-account-start'].setValue(acc.startDate);
+        }
+        if (window.datePickers && window.datePickers['edit-account-due']) {
+            window.datePickers['edit-account-due'].setValue(acc.dueDate);
+        }
+
         document.getElementById('edit-account-modal').classList.remove('hidden');
     },
     openEditBucketModal: (id) => {
@@ -374,24 +447,72 @@ const ui = {
         const txType = document.getElementById('tx-type')?.value;
         const accountsToShow = (txType === 'INCOME' || txType === 'EXPENSE') ? app.data.accounts.filter(a => a.type === 'ASSET') : app.data.accounts;
         accountsToShow.forEach(acc => { accSelect.innerHTML += `<option value="${acc.id}" data-currency="${acc.currency}">${acc.name} (${ui.formatMoney(acc.balance, acc.currency)})</option>`; });
-        bucSelect.innerHTML = '<option value="">Sin Bucket (General)</option>';
         app.data.buckets.forEach(buc => { bucSelect.innerHTML += `<option value="${buc.id}">${buc.name}</option>`; });
     },
     toggleFilters: () => { const panel = document.getElementById('filter-panel'); panel.classList.toggle('hidden'); },
     populateFilterSelects: () => { const bucketSelect = document.getElementById('filter-bucket'); const currentVal = bucketSelect.value; bucketSelect.innerHTML = '<option value="ALL">Todas</option>'; app.data.buckets.forEach(b => { bucketSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`; }); bucketSelect.value = currentVal || "ALL"; },
     setFilterDate: (range) => {
-        const start = document.getElementById('filter-date-start'); const end = document.getElementById('filter-date-end'); const now = new Date(); now.setHours(0, 0, 0, 0);
-        let startDate = new Date(now); let endDate = new Date(now);
-        if (range === 'week') { const day = now.getDay(); startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6); }
-        else if (range === 'fortnight') { if (now.getDate() <= 15) { startDate.setDate(1); endDate = new Date(now.getFullYear(), now.getMonth(), 15); } else { startDate.setDate(16); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); } }
-        else if (range === 'month') { startDate.setDate(1); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); }
-        const fmt = d => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; };
-        start.value = fmt(startDate); end.value = fmt(endDate); ui.applyFilters();
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        let startDate = new Date(now);
+        let endDate = new Date(now);
+
+        if (range === 'week') {
+            const day = now.getDay();
+            startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+        } else if (range === 'fortnight') {
+            if (now.getDate() <= 15) {
+                startDate.setDate(1);
+                endDate = new Date(now.getFullYear(), now.getMonth(), 15);
+            } else {
+                startDate.setDate(16);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            }
+        } else if (range === 'month') {
+            startDate.setDate(1);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        }
+
+        const fmt = d => d.toISOString().split('T')[0];
+
+        if (window.datePickers && window.datePickers['filter-start']) {
+            window.datePickers['filter-start'].setValue(fmt(startDate));
+        }
+        if (window.datePickers && window.datePickers['filter-end']) {
+            window.datePickers['filter-end'].setValue(fmt(endDate));
+        }
+
+        ui.applyFilters();
     },
-    clearFilters: () => { document.getElementById('filter-search').value = ''; document.getElementById('filter-date-start').value = ''; document.getElementById('filter-date-end').value = ''; document.getElementById('filter-type').value = 'ALL'; document.getElementById('filter-bucket').value = 'ALL'; document.getElementById('filter-min').value = ''; document.getElementById('filter-max').value = ''; ui.applyFilters(); },
+    clearFilters: () => {
+        document.getElementById('filter-search').value = '';
+        if (window.datePickers && window.datePickers['filter-start']) {
+            window.datePickers['filter-start'].setValue('');
+        }
+        if (window.datePickers && window.datePickers['filter-end']) {
+            window.datePickers['filter-end'].setValue('');
+        }
+        document.getElementById('filter-type').value = 'ALL';
+        document.getElementById('filter-bucket').value = 'ALL';
+        document.getElementById('filter-min').value = '';
+        document.getElementById('filter-max').value = '';
+        ui.applyFilters();
+    },
     applyFilters: () => {
-        const filters = { search: document.getElementById('filter-search').value, start: document.getElementById('filter-date-start').value, end: document.getElementById('filter-date-end').value, type: document.getElementById('filter-type').value, bucket: document.getElementById('filter-bucket').value, min: document.getElementById('filter-min').value, max: document.getElementById('filter-max').value };
-        const filteredTx = app.filterTransactions(filters); const globalCurr = document.getElementById('currency-select')?.value || 'USD'; ui.renderTransactions(globalCurr, filteredTx);
+        const filters = {
+            search: document.getElementById('filter-search').value,
+            start: document.getElementById('filter-start')?.dataset.isoDate,
+            end: document.getElementById('filter-end')?.dataset.isoDate,
+            type: document.getElementById('filter-type').value,
+            bucket: document.getElementById('filter-bucket').value,
+            min: document.getElementById('filter-min').value,
+            max: document.getElementById('filter-max').value
+        };
+        const filteredTx = app.filterTransactions(filters);
+        const globalCurr = document.getElementById('currency-select')?.value || 'USD';
+        ui.renderTransactions(globalCurr, filteredTx);
     },
     updateModalCurrency: () => { const accSelect = document.getElementById('tx-account'); const curr = accSelect.options[accSelect.selectedIndex]?.dataset.currency; const symbols = { 'USD': '$', 'VES': 'Bs.', 'USDT': '₮' }; document.getElementById('modal-currency-symbol').innerText = symbols[curr] || '$'; },
     renderTransactions: (globalCurr, transactions = null) => {
