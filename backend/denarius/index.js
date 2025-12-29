@@ -106,7 +106,8 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
-  console.log(`API Docs available at http://localhost:${port}/api-docs`);
-  console.log(`Migrations panel at http://localhost:${port}/migrations.html`);
+  const apiUrl = process.env.API_URL || `http://localhost:${port}`;
+  console.log(`Server listening at ${apiUrl}`);
+  console.log(`API Docs available at ${apiUrl}/api-docs`);
+  console.log(`Migrations panel at ${apiUrl}/migrations.html`);
 });

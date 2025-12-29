@@ -93,8 +93,11 @@ npm start
 ```
 
 ### 4. Variables de Entorno (.env)
+
+#### Backend
 Crea un archivo `.env` dentro de cada carpeta de backend (`backend/denarius` y `backend/glasse`) con las siguientes variables:
-```
+
+```env
 # Configuración del Servidor
 PORT=3000 # Usa 3001 para Glasse si corres ambos simultáneamente
 
@@ -103,7 +106,47 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=tu_contraseña
 DB_NAME=denarius_db # o glasse_db
+
+# API URL (Backend)
+# Para desarrollo local:
+API_URL=http://localhost:3000
+# Para producción en Render:
+# API_URL=https://denarius-backend.onrender.com
 ```
+
+#### Frontend (Next.js)
+El nuevo frontend en Next.js utiliza variables de entorno separadas:
+
+**Para desarrollo local** (`.env.local`):
+```env
+# Denarius Backend API
+NEXT_PUBLIC_DENARIUS_API=http://localhost:3000/api
+
+# Glasse Backend API
+NEXT_PUBLIC_GLASSE_API=http://localhost:3001/api
+```
+
+**Para producción** (`.env.production`):
+```env
+# Denarius Backend API (Production)
+NEXT_PUBLIC_DENARIUS_API=https://denarius-backend.onrender.com/api
+
+# Glasse Backend API (Production - update when available)
+NEXT_PUBLIC_GLASSE_API=http://localhost:3001/api
+```
+
+> 💡 **Tip**: Next.js automáticamente usa `.env.production` al hacer build para producción.
+
+#### Cambiar entre Local y Producción
+
+**Backend:**
+- Edita el archivo `.env` y cambia `API_URL`
+- Reinicia el servidor
+
+**Frontend:**
+- Para desarrollo: usa `.env.local`
+- Para producción: usa `.env.production` (automático en build)
+- O simplemente cambia la URL en `.env.local` según necesites
 
 ### 5. Ejecutar el Frontend
 El frontend es estático y se encuentra en la carpeta `frontend`.

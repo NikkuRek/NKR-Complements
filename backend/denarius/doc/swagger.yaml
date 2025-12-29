@@ -31,7 +31,7 @@ info:
 servers:
   - url: http://localhost:3000/api
     description: Servidor de desarrollo local
-  - url: https://api.denarius.app
+  - url: https://denarius-backend.onrender.com/api
     description: Servidor de producción
 
 tags:
