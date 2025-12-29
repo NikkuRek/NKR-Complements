@@ -1,0 +1,258 @@
+openapi: 3.0.0
+info:
+  title: Denarius API
+  description: |
+    API REST completa para el sistema de gestión financiera Denarius.
+    
+    Denarius es una aplicación de finanzas personales que permite:
+    - Gestionar cuentas (activos, deudas, cuentas por cobrar)
+    - Administrar presupuestos (buckets)
+    - Registrar transacciones
+    - Mantener una wishlist de productos
+    
+    ## Autenticación
+    Actualmente la API no requiere autenticación (desarrollo).
+    
+    ## Formatos de Fecha
+    Todas las fechas utilizan formato ISO 8601: `YYYY-MM-DD`
+    
+    ## Monedas Soportadas
+    - `USD` - Dólar estadounidense
+    - `VES` - Bolívar venezolano
+    - `USDT` - Tether (cripto)
+  version: 1.0.0
+  contact:
+    name: Denarius Support
+    email: support@denarius.app
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor de desarrollo local
+  - url: https://api.denarius.app
+    description: Servidor de producción
+
+tags:
+  - name: Accounts
+    description: Gestión de cuentas financieras
+  - name: Buckets
+    description: Gestión de presupuestos (categorías)
+  - name: Transactions
+    description: Gestión de transacciones financieras
+  - name: Wishlist
+    description: Lista de deseos de productos
+  - name: Migrations
+    description: Herramientas de migración de BD
+  - name: Sync
+    description: Sincronización de datos
+
+components:
+  schemas:
+    Account:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - currency
+        - balance
+      properties:
+        id:
+          type: string
+          description: ID único de la cuenta
+          example: "123"
+        name:
+          type: string
+          description: Nombre de la cuenta
+          example: "Banco Principal"
+        type:
+          type: string
+          enum: [ASSET, LIABILITY, RECEIVABLE]
+          description: Tipo de cuenta
+          example: "ASSET"
+        currency:
+          type: string
+          enum: [USD, VES, USDT]
+          description: Moneda de la cuenta
+          example: "USD"
+        balance:
+          type: number
+          format: double
+          description: Balance actual
+          example: 1500.50
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Fecha de inicio (para LIABILITY y RECEIVABLE)
+          example: "2025-01-01"
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          description: Fecha de vencimiento (para LIABILITY y RECEIVABLE)
+          example: "2025-12-31"
+        created_at:
+          type: string
+          format: date-time
+          description: Fecha de creación
+    
+    Bucket:
+      type: object
+      required:
+        - id
+        - name
+        - balance
+      properties:
+        id:
+          type: string
+          description: ID único del bucket
+          example: "456"
+        name:
+          type: string
+          description: Nombre del bucket
+          example: "Comida"
+        balance:
+          type: number
+          format: double
+          description: Balance asignado
+          example: 500.00
+        created_at:
+          type: string
+          format: date-time
+          description: Fecha de creación
+    
+    Transaction:
+      type: object
+      required:
+        - id
+        - date
+        - amount
+        - type
+        - description
+      properties:
+        id:
+          type: string
+          description: ID único de la transacción
+          example: "789"
+        date:
+          type: string
+          format: date-time
+          description: Fecha y hora de la transacción
+          example: "2025-01-15T10:30:00Z"
+        amount:
+          type: number
+          format: double
+          description: Monto de la transacción
+          example: 150.00
+        type:
+          type: string
+          enum: [INCOME, EXPENSE, TRANSFER_IN, TRANSFER_OUT, BUCKET_XFER]
+          description: Tipo de transacción
+          example: "INCOME"
+        account_id:
+          type: integer
+          nullable: true
+          description: ID de la cuenta asociada
+          example: 123
+        bucket_id:
+          type: integer
+          nullable: true
+          description: ID del bucket asociado
+          example: 456
+        source_bucket_id:
+          type: integer
+          nullable: true
+          description: ID del bucket origen (transferencias)
+          example: null
+        description:
+          type: string
+          description: Descripción de la transacción
+          example: "Salario mensual"
+        created_at:
+          type: string
+          format: date-time
+          description: Fecha de creación
+    
+    WishlistItem:
+      type: object
+      required:
+        - id
+        - product_name
+        - price
+        - currency
+      properties:
+        id:
+          type: string
+          description: ID único del item
+          example: "321"
+        product_name:
+          type: string
+          description: Nombre del producto
+          example: "Laptop Dell XPS 15"
+        price:
+          type: number
+          format: double
+          description: Precio del producto
+          example: 1500.00
+        currency:
+          type: string
+          enum: [USD, VES, USDT]
+          description: Moneda del precio
+          example: "USD"
+        details:
+          type: string
+          description: Detalles adicionales
+          example: "16GB RAM, 512GB SSD"
+        created_at:
+          type: string
+          format: date-time
+          description: Fecha de creación
+    
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Mensaje de error
+          example: "Resource not found"
+    
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          description: Mensaje de éxito
+          example: "Operation completed successfully"
+
+  responses:
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    BadRequest:
+      description: Solicitud incorrecta
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    ServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths: {}

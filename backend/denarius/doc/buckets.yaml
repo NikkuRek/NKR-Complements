@@ -1,0 +1,150 @@
+/buckets:
+  get:
+    tags:
+      - Buckets
+    summary: Obtener todos los buckets
+    description: Retorna una lista de todos los presupuestos (buckets) del usuario
+    responses:
+      '200':
+        description: Lista de buckets obtenida exitosamente
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../swagger.yaml#/components/schemas/Bucket'
+            example:
+              - id: "1"
+                name: "Comida"
+                balance: 500.00
+              - id: "2"
+                name: "Transporte"
+                balance: 200.00
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  post:
+    tags:
+      - Buckets
+    summary: Crear un nuevo bucket
+    description: Crea un nuevo presupuesto (categoría de gasto)
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+              - balance
+            properties:
+              name:
+                type: string
+                description: Nombre del bucket
+                example: "Comida"
+              balance:
+                type: number
+                format: double
+                description: Balance inicial asignado
+                example: 500.00
+    responses:
+      '201':
+        description: Bucket creado exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Bucket'
+      '400':
+        $ref: '../swagger.yaml#/components/responses/BadRequest'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+
+/buckets/{id}:
+  get:
+    tags:
+      - Buckets
+    summary: Obtener un bucket por ID
+    description: Retorna los detalles de un bucket específico
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID del bucket
+        example: "456"
+    responses:
+      '200':
+        description: Bucket encontrado
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Bucket'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  put:
+    tags:
+      - Buckets
+    summary: Actualizar un bucket
+    description: Actualiza los datos de un bucket existente
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID del bucket
+        example: "456"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "Comida Actualizado"
+              balance:
+                type: number
+                format: double
+                example: 600.00
+    responses:
+      '200':
+        description: Bucket actualizado exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Bucket'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  delete:
+    tags:
+      - Buckets
+    summary: Eliminar un bucket
+    description: Elimina un bucket y todas sus transacciones relacionadas
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID del bucket
+        example: "456"
+    responses:
+      '200':
+        description: Bucket eliminado exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Success'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'

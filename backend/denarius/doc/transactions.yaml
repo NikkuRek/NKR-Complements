@@ -1,0 +1,158 @@
+/transactions:
+  get:
+    tags:
+      - Transactions
+    summary: Obtener todas las transacciones
+    description: Retorna una lista de todas las transacciones financieras
+    responses:
+      '200':
+        description: Lista de transacciones obtenida exitosamente
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../swagger.yaml#/components/schemas/Transaction'
+            example:
+              - id: "1"
+                date: "2025-01-15T10:30:00Z"
+                amount: 1500.00
+                type: "INCOME"
+                account_id: 123
+                bucket_id: 456
+                source_bucket_id: null
+                description: "Salario mensual"
+              - id: "2"
+                date: "2025-01-16T14:20:00Z"
+                amount: 50.00
+                type: "EXPENSE"
+                account_id: 123
+                bucket_id: 456
+                source_bucket_id: null
+                description: "Compra supermercado"
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  post:
+    tags:
+      - Transactions
+    summary: Crear una nueva transacción
+    description: |
+      Crea una nueva transacción financiera. Los tipos soportados son:
+      - **INCOME**: Ingreso a una cuenta ASSET
+      - **EXPENSE**: Gasto desde una cuenta ASSET
+      - **TRANSFER_IN**: Transferencia hacia un bucket
+      - **TRANSFER_OUT**: Transferencia desde un bucket
+      - **BUCKET_XFER**: Transferencia entre buckets
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - date
+              - amount
+              - type
+              - description
+            properties:
+              date:
+                type: string
+                format: date-time
+                description: Fecha y hora de la transacción
+                example: "2025-01-15T10:30:00Z"
+              amount:
+                type: number
+                format: double
+                description: Monto de la transacción
+                example: 150.00
+              type:
+                type: string
+                enum: [INCOME, EXPENSE, TRANSFER_IN, TRANSFER_OUT, BUCKET_XFER]
+                description: Tipo de transacción
+                example: "INCOME"
+              account_id:
+                type: integer
+                nullable: true
+                description: ID de la cuenta asociada (requerido para INCOME/EXPENSE)
+                example: 123
+              bucket_id:
+                type: integer
+                nullable: true
+                description: ID del bucket asociado
+                example: 456
+              source_bucket_id:
+                type: integer
+                nullable: true
+                description: ID del bucket origen (solo para BUCKET_XFER)
+                example: null
+              description:
+                type: string
+                description: Descripción de la transacción
+                example: "Salario mensual"
+    responses:
+      '201':
+        description: Transacción creada exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Transaction'
+      '400':
+        $ref: '../swagger.yaml#/components/responses/BadRequest'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+
+/transactions/{id}:
+  get:
+    tags:
+      - Transactions
+    summary: Obtener una transacción por ID
+    description: Retorna los detalles de una transacción específica
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID de la transacción
+        example: "789"
+    responses:
+      '200':
+        description: Transacción encontrada
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Transaction'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  delete:
+    tags:
+      - Transactions
+    summary: Eliminar una transacción
+    description: |
+      Elimina una transacción y revierte sus efectos en los balances.
+      
+      **Importante**: El balance de la cuenta o bucket asociado se actualizará automáticamente
+      al eliminar la transacción.
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID de la transacción
+        example: "789"
+    responses:
+      '200':
+        description: Transacción eliminada exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Success'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'

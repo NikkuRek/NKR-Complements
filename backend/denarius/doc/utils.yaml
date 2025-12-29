@@ -1,0 +1,116 @@
+/migrate:
+  post:
+    tags:
+      - Migrations
+    summary: Ejecutar migraciones de base de datos
+    description: |
+      Ejecuta todas las migraciones SQL pendientes en la base de datos.
+      
+      **⚠️ Advertencia**: Esta operación modifica la estructura de la base de datos.
+      Asegúrate de tener un respaldo antes de ejecutar.
+      
+      El sistema leerá el archivo `migrations/migrations.sql` y ejecutará todas
+      las sentencias SQL contenidas en él.
+    responses:
+      '200':
+        description: Migraciones ejecutadas exitosamente
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: "Database migration completed successfully!"
+      '500':
+        description: Error al ejecutar migraciones
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                error:
+                  type: string
+                  example: "Error executing migration: Table already exists"
+
+/check-db:
+  get:
+    tags:
+      - Migrations
+    summary: Verificar conexión a la base de datos
+    description: |
+      Verifica que la conexión a la base de datos esté funcionando correctamente
+      y retorna información sobre la base de datos actual.
+      
+      Útil para diagnosticar problemas de conexión o verificar la configuración.
+    responses:
+      '200':
+        description: Conexión exitosa
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                status:
+                  type: string
+                  example: "Connected"
+                database:
+                  type: string
+                  description: Nombre de la base de datos actual
+                  example: "denarius_db"
+            example:
+              success: true
+              status: "Connected"
+              database: "denarius_db"
+      '500':
+        description: Error de conexión
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                error:
+                  type: string
+                  example: "Cannot connect to database"
+
+/sync:
+  post:
+    tags:
+      - Sync
+    summary: Sincronizar datos
+    description: |
+      Endpoint de sincronización de datos (funcionalidad futura).
+      
+      Este endpoint está reservado para implementar funcionalidades de
+      sincronización entre dispositivos o respaldo en la nube.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                description: Datos a sincronizar
+    responses:
+      '200':
+        description: Sincronización completada
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Success'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'

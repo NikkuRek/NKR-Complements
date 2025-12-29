@@ -1,0 +1,171 @@
+/wishlist:
+  get:
+    tags:
+      - Wishlist
+    summary: Obtener todos los items de la wishlist
+    description: Retorna una lista de todos los productos deseados
+    responses:
+      '200':
+        description: Lista de wishlist obtenida exitosamente
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../swagger.yaml#/components/schemas/WishlistItem'
+            example:
+              - id: "1"
+                product_name: "Laptop Dell XPS 15"
+                price: 1500.00
+                currency: "USD"
+                details: "16GB RAM, 512GB SSD"
+              - id: "2"
+                product_name: "iPhone 15 Pro"
+                price: 1200.00
+                currency: "USD"
+                details: "256GB, Titanio Natural"
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  post:
+    tags:
+      - Wishlist
+    summary: Agregar un item a la wishlist
+    description: Crea un nuevo producto en la lista de deseos
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - product_name
+              - price
+              - currency
+            properties:
+              product_name:
+                type: string
+                description: Nombre del producto
+                example: "Laptop Dell XPS 15"
+              price:
+                type: number
+                format: double
+                description: Precio del producto
+                example: 1500.00
+              currency:
+                type: string
+                enum: [USD, VES, USDT]
+                description: Moneda del precio
+                example: "USD"
+              details:
+                type: string
+                description: Detalles o especificaciones adicionales
+                example: "16GB RAM, 512GB SSD"
+    responses:
+      '201':
+        description: Item agregado exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/WishlistItem'
+      '400':
+        $ref: '../swagger.yaml#/components/responses/BadRequest'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+
+/wishlist/{id}:
+  get:
+    tags:
+      - Wishlist
+    summary: Obtener un item por ID
+    description: Retorna los detalles de un producto específico de la wishlist
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID del item
+        example: "321"
+    responses:
+      '200':
+        description: Item encontrado
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/WishlistItem'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  put:
+    tags:
+      - Wishlist
+    summary: Actualizar un item de la wishlist
+    description: Actualiza los datos de un producto en la lista de deseos
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID del item
+        example: "321"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              product_name:
+                type: string
+                example: "Laptop Dell XPS 15 (2025)"
+              price:
+                type: number
+                format: double
+                example: 1600.00
+              currency:
+                type: string
+                enum: [USD, VES, USDT]
+                example: "USD"
+              details:
+                type: string
+                example: "32GB RAM, 1TB SSD"
+    responses:
+      '200':
+        description: Item actualizado exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/WishlistItem'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  delete:
+    tags:
+      - Wishlist
+    summary: Eliminar un item de la wishlist
+    description: Remueve un producto de la lista de deseos
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID del item
+        example: "321"
+    responses:
+      '200':
+        description: Item eliminado exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Success'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'

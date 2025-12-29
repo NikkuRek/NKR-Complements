@@ -1,0 +1,200 @@
+/accounts:
+  get:
+    tags:
+      - Accounts
+    summary: Obtener todas las cuentas
+    description: Retorna una lista de todas las cuentas financieras del usuario
+    responses:
+      '200':
+        description: Lista de cuentas obtenida exitosamente
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../swagger.yaml#/components/schemas/Account'
+            example:
+              - id: "1"
+                name: "Banco Principal"
+                type: "ASSET"
+                currency: "USD"
+                balance: 1500.50
+                start_date: null
+                due_date: null
+              - id: "2"
+                name: "Préstamo Juan"
+                type: "RECEIVABLE"
+                currency: "USD"
+                balance: 500.00
+                start_date: "2025-01-01"
+                due_date: "2025-12-31"
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  post:
+    tags:
+      - Accounts
+    summary: Crear una nueva cuenta
+    description: Crea una nueva cuenta financiera (activo, deuda o cuenta por cobrar)
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+              - type
+              - currency
+              - balance
+            properties:
+              name:
+                type: string
+                description: Nombre de la cuenta
+                example: "Banco Principal"
+              type:
+                type: string
+                enum: [ASSET, LIABILITY, RECEIVABLE]
+                description: Tipo de cuenta
+                example: "ASSET"
+              currency:
+                type: string
+                enum: [USD, VES, USDT]
+                description: Moneda de la cuenta
+                example: "USD"
+              balance:
+                type: number
+                format: double
+                description: Balance inicial
+                example: 0.00
+              start_date:
+                type: string
+                format: date
+                nullable: true
+                description: Fecha de inicio (opcional, para RECEIVABLE y LIABILITY)
+                example: "2025-01-01"
+              due_date:
+                type: string
+                format: date
+                nullable: true
+                description: Fecha de vencimiento (opcional, para RECEIVABLE y LIABILITY)
+                example: "2025-12-31"
+    responses:
+      '201':
+        description: Cuenta creada exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Account'
+      '400':
+        $ref: '../swagger.yaml#/components/responses/BadRequest'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+
+/accounts/{id}:
+  get:
+    tags:
+      - Accounts
+    summary: Obtener una cuenta por ID
+    description: Retorna los detalles de una cuenta específica
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID de la cuenta
+        example: "123"
+    responses:
+      '200':
+        description: Cuenta encontrada
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Account'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  put:
+    tags:
+      - Accounts
+    summary: Actualizar una cuenta
+    description: Actualiza los datos de una cuenta existente
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID de la cuenta
+        example: "123"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "Banco Actualizado"
+              type:
+                type: string
+                enum: [ASSET, LIABILITY, RECEIVABLE]
+                example: "ASSET"
+              currency:
+                type: string
+                enum: [USD, VES, USDT]
+                example: "USD"
+              balance:
+                type: number
+                format: double
+                example: 2000.00
+              start_date:
+                type: string
+                format: date
+                nullable: true
+                example: "2025-01-01"
+              due_date:
+                type: string
+                format: date
+                nullable: true
+                example: "2025-12-31"
+    responses:
+      '200':
+        description: Cuenta actualizada exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Account'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
+  
+  delete:
+    tags:
+      - Accounts
+    summary: Eliminar una cuenta
+    description: Elimina una cuenta y todas sus transacciones relacionadas
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ID de la cuenta
+        example: "123"
+    responses:
+      '200':
+        description: Cuenta eliminada exitosamente
+        content:
+          application/json:
+            schema:
+              $ref: '../swagger.yaml#/components/schemas/Success'
+      '404':
+        $ref: '../swagger.yaml#/components/responses/NotFound'
+      '500':
+        $ref: '../swagger.yaml#/components/responses/ServerError'
