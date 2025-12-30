@@ -15,10 +15,10 @@ router.get('/', async (req, res) => {
 // POST /api/buckets
 router.post('/', async (req, res) => {
   try {
-    const { name, balance } = req.body;
+    const { name, balance, currency } = req.body;
     const [result] = await pool.query(
-      'INSERT INTO buckets (name, balance) VALUES (?, ?)',
-      [name, balance || 0]
+      'INSERT INTO buckets (name, balance, currency) VALUES (?, ?, ?)',
+      [name, balance || 0, currency || 'USD']
     );
     res.status(201).json({ id: result.insertId });
   } catch (error) {
@@ -31,13 +31,14 @@ router.post('/', async (req, res) => {
 router.put('/:b_id', async (req, res) => {
   try {
     const { b_id } = req.params;
-    const { name, balance } = req.body;
+    const { name, balance, currency } = req.body;
 
     const fields = [];
     const values = [];
 
     if (name !== undefined) { fields.push('name = ?'); values.push(name); }
     if (balance !== undefined) { fields.push('balance = ?'); values.push(balance); }
+    if (currency !== undefined) { fields.push('currency = ?'); values.push(currency); }
 
     if (fields.length === 0) {
       return res.json({ updated: false, message: 'No fields provided' });

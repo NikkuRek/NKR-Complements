@@ -5,7 +5,24 @@ const pool = require('../db');
 // GET /api/transactions
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM transactions ORDER BY date DESC');
+    const { account_id, limit } = req.query;
+
+    let query = 'SELECT * FROM transactions';
+    const params = [];
+
+    if (account_id) {
+      query += ' WHERE account_id = ?';
+      params.push(account_id);
+    }
+
+    query += ' ORDER BY date DESC';
+
+    if (limit) {
+      query += ' LIMIT ?';
+      params.push(parseInt(String(limit), 10)); // Force int parsing
+    }
+
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -36,14 +53,14 @@ router.post('/', async (req, res) => {
     }
 
     if (bucket_id) {
-      if (type === 'income' || type === 'bucket_move') {
+      if (lowerCaseType === 'income' || lowerCaseType === 'bucket_move') {
         await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [amount, bucket_id]);
-      } else if (type === 'expense') {
+      } else if (lowerCaseType === 'expense') {
         await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, bucket_id]);
       }
     }
 
-    if (source_bucket_id && type === 'bucket_move') {
+    if (source_bucket_id && lowerCaseType === 'bucket_move') {
       await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
     }
 
@@ -96,13 +113,13 @@ router.put('/:tx_id', async (req, res) => {
       }
     }
     if (oldTx.bucket_id) {
-      if (oldTx.type === 'income' || oldTx.type === 'bucket_move') {
+      if (oldType === 'income' || oldType === 'bucket_move') {
         await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [oldTx.amount, oldTx.bucket_id]);
-      } else if (oldTx.type === 'expense') {
+      } else if (oldType === 'expense') {
         await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [oldTx.amount, oldTx.bucket_id]);
       }
     }
-    if (oldTx.source_bucket_id && oldTx.type === 'bucket_move') {
+    if (oldTx.source_bucket_id && oldType === 'bucket_move') {
       await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [oldTx.amount, oldTx.source_bucket_id]);
     }
 
@@ -122,13 +139,13 @@ router.put('/:tx_id', async (req, res) => {
       }
     }
     if (bucket_id) {
-      if (type === 'income' || type === 'bucket_move') {
+      if (newType === 'income' || newType === 'bucket_move') {
         await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [amount, bucket_id]);
-      } else if (type === 'expense') {
+      } else if (newType === 'expense') {
         await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, bucket_id]);
       }
     }
-    if (source_bucket_id && type === 'bucket_move') {
+    if (source_bucket_id && newType === 'bucket_move') {
       await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
     }
 
@@ -169,14 +186,14 @@ router.delete('/:tx_id', async (req, res) => {
     }
 
     if (tx.bucket_id) {
-      if (tx.type === 'income' || tx.type === 'bucket_move') {
+      if (oldType === 'income' || oldType === 'bucket_move') {
         await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [tx.amount, tx.bucket_id]);
-      } else if (tx.type === 'expense') {
+      } else if (oldType === 'expense') {
         await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [tx.amount, tx.bucket_id]);
       }
     }
 
-    if (tx.source_bucket_id && tx.type === 'bucket_move') {
+    if (tx.source_bucket_id && oldType === 'bucket_move') {
       await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [tx.amount, tx.source_bucket_id]);
     }
 
