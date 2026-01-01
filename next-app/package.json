@@ -1,0 +1,36 @@
+{
+    "name": "next-app",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint"
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.24.1",
+        "@heroicons/react": "^2.2.0",
+        "date-fns": "^4.1.0",
+        "next": "16.1.1",
+        "react": "19.2.3",
+        "react-dom": "19.2.3",
+        "react-markdown": "^10.1.0"
+    },
+    "devDependencies": {
+        "@eslint/eslintrc": "^3.3.3",
+        "@types/node": "^22",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "@typescript-eslint/eslint-plugin": "^8.50.1",
+        "@typescript-eslint/parser": "^8.50.1",
+        "autoprefixer": "^10.4.23",
+        "eslint": "^9",
+        "eslint-config-next": "16.1.1",
+        "globals": "^16.5.0",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^3.4.19",
+        "typescript": "^5",
+        "typescript-eslint": "^8.50.1"
+    }
+}
