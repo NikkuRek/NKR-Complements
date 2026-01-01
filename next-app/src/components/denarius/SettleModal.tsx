@@ -123,6 +123,10 @@ export default function SettleModal({
         const isTargetVes = targetCurrency === 'VES';
 
         // Case 1: VES -> Foreign (Divisor Rate)
+        // Example: User wants to pay $10, but pays with VES.
+        // Rate: 50 VES/USD.
+        // Input Amount: 500 VES (Source).
+        // Target Amount: 500 / 50 = $10 (Target).
         if (isSourceVes && !isTargetVes) {
             if (inputMode === 'SOURCE') { // Input Bs
                 return { sVal: val, tVal: val / rVal };
@@ -132,6 +136,10 @@ export default function SettleModal({
         }
 
         // Case 2: Foreign -> VES (Multiplier Rate)
+        // Example: User wants to pay 500 VES debt, but pays with $10.
+        // Rate: 50 VES/USD.
+        // Input Amount: $10 (Source).
+        // Target Amount: 10 * 50 = 500 VES (Target).
         if (!isSourceVes && isTargetVes) {
             if (inputMode === 'SOURCE') { // Input Foreign
                 return { sVal: val, tVal: val * rVal };

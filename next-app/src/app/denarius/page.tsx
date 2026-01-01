@@ -18,7 +18,8 @@ import {
     ChartBarIcon
 } from '@heroicons/react/24/outline';
 
-const GEMINI_API_KEY = 'AIzaSyBX5z0FLY5VUuzVNkcoSUHLvB1CLLVLpy4';
+const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+const DOLAR_API_URL = process.env.NEXT_PUBLIC_DOLAR_API_URL || 'https://ve.dolarapi.com/v1/dolares';
 
 type View = 'accounts' | 'budgets' | 'transactions' | 'wishlist' | 'calculator' | 'statistics';
 
@@ -32,7 +33,7 @@ export default function DenariusPage() {
     const fetchUsdOfficial = async (silent: boolean = false) => {
         setLoadingRates(prev => ({ ...prev, USD: true }));
         try {
-            const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+            const res = await fetch(`${DOLAR_API_URL}/oficial`);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             const val = parseFloat(data?.promedio);
@@ -53,7 +54,7 @@ export default function DenariusPage() {
     const fetchUsdtParalelo = async (silent: boolean = false) => {
         setLoadingRates(prev => ({ ...prev, USDT: true }));
         try {
-            const res = await fetch('https://ve.dolarapi.com/v1/dolares/paralelo');
+            const res = await fetch(`${DOLAR_API_URL}/paralelo`);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             const val = parseFloat(data?.promedio);

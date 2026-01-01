@@ -12,6 +12,7 @@ import AssetAccountItem from '@/components/denarius/AssetAccountItem';
 import AccountModal from '@/components/ui/AccountModal';
 import TransactionModal from './TransactionModal';
 import SettleModal from './SettleModal';
+import ExchangeRateWidget from './ExchangeRateWidget';
 import { CheckIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 
@@ -602,60 +603,27 @@ export default function AccountsView({
     const totals = calculateTotals();
 
 
-
-
-
     return (
         <div id="view-home" className="space-y-6 animate-fade-in">
             {/* TASAS DE CAMBIO (Pills Style) */}
             <div className="flex gap-3 justify-center text-xs">
                 {/* USD Widget */}
-                <div className="glass-panel px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg shadow-black/20">
-                    <span className="text-slate-400 font-semibold">USD</span>
-                    <div className="h-3 w-[1px] bg-slate-700"></div>
-                    <div className="h-3 w-[1px] bg-slate-700"></div>
-                    <input
-                        type="number"
-                        value={tempRates.USD}
-                        onChange={(e) => handleRateChange('USD', e.target.value)}
-                        onBlur={() => handleRateSubmit('USD')}
-                        onKeyDown={(e) => e.key === 'Enter' && handleRateSubmit('USD')}
-                        className="w-16 bg-transparent text-right font-mono text-indigo-400 outline-none placeholder-slate-600"
-                        placeholder="0.00"
-                        step="0.01"
-                    />
-                    <button
-                        onClick={onFetchUsdRate}
-                        disabled={loadingRates.USD}
-                        className="text-indigo-400 hover:text-white transition-colors disabled:opacity-50"
-                    >
-                        <i className={`fas fa-sync-alt text-[10px] ${loadingRates.USD ? 'animate-spin' : ''}`}></i>
-                    </button>
-                </div>
+                <ExchangeRateWidget
+                    currency="USD"
+                    rate={rates.USD}
+                    loading={loadingRates.USD}
+                    onFetchRate={onFetchUsdRate || (() => { })}
+                    onRateChange={(val) => onSetRate && onSetRate('USD', val)}
+                />
 
                 {/* USDT Widget */}
-                <div className="glass-panel px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg shadow-black/20">
-                    <span className="text-slate-400 font-semibold">USDT</span>
-                    <div className="h-3 w-[1px] bg-slate-700"></div>
-                    <div className="h-3 w-[1px] bg-slate-700"></div>
-                    <input
-                        type="number"
-                        value={tempRates.USDT}
-                        onChange={(e) => handleRateChange('USDT', e.target.value)}
-                        onBlur={() => handleRateSubmit('USDT')}
-                        onKeyDown={(e) => e.key === 'Enter' && handleRateSubmit('USDT')}
-                        className="w-16 bg-transparent text-right font-mono text-emerald-400 outline-none placeholder-slate-600"
-                        placeholder="0.00"
-                        step="0.01"
-                    />
-                    <button
-                        onClick={onFetchUsdtRate}
-                        disabled={loadingRates.USDT}
-                        className="text-emerald-400 hover:text-white transition-colors disabled:opacity-50"
-                    >
-                        <i className={`fas fa-sync-alt text-[10px] ${loadingRates.USDT ? 'animate-spin' : ''}`}></i>
-                    </button>
-                </div>
+                <ExchangeRateWidget
+                    currency="USDT"
+                    rate={rates.USDT}
+                    loading={loadingRates.USDT}
+                    onFetchRate={onFetchUsdtRate || (() => { })}
+                    onRateChange={(val) => onSetRate && onSetRate('USDT', val)}
+                />
             </div>
 
             {/* BALANCE GENERAL (Hero Card) */}
@@ -720,39 +688,44 @@ export default function AccountsView({
 
             {/* ACCIONES RÁPIDAS (Icon Row) */}
             <div className="grid grid-cols-3 gap-3">
-                <button
+                <Button
+                    variant="success"
+                    className="!rounded-2xl !p-4 flex-col items-center justify-center gap-2 h-auto"
                     onClick={() => {
                         setTransactionType('INCOME');
                         setTransactionModalOpen(true);
                     }}
-                    className="group glass-panel p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-slate-800 transition active:scale-95"
                 >
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition">
-                        <i className="fas fa-plus text-emerald-400 text-sm"></i>
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <i className="fas fa-plus text-white text-sm"></i>
                     </div>
-                    <span className="text-[10px] font-medium text-slate-300">Ingreso</span>
-                </button>
-                <button
+                    <span className="text-[10px] font-medium text-white/90">Ingreso</span>
+                </Button>
+
+                <Button
+                    variant="danger"
+                    className="!rounded-2xl !p-4 flex-col items-center justify-center gap-2 h-auto"
                     onClick={() => {
                         setTransactionType('EXPENSE');
                         setTransactionModalOpen(true);
                     }}
-                    className="group glass-panel p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-slate-800 transition active:scale-95"
                 >
-                    <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center group-hover:bg-rose-500/20 transition">
-                        <i className="fas fa-minus text-rose-400 text-sm"></i>
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <i className="fas fa-minus text-white text-sm"></i>
                     </div>
-                    <span className="text-[10px] font-medium text-slate-300">Gasto</span>
-                </button>
-                <button
+                    <span className="text-[10px] font-medium text-white/90">Gasto</span>
+                </Button>
+
+                <Button
+                    variant="primary" // Using primary for "Move"
+                    className="!rounded-2xl !p-4 flex-col items-center justify-center gap-2 h-auto bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50"
                     onClick={() => setTransferModalOpen(true)}
-                    className="group glass-panel p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-slate-800 transition active:scale-95"
                 >
                     <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20 transition">
                         <i className="fas fa-exchange-alt text-indigo-400 text-sm"></i>
                     </div>
                     <span className="text-[10px] font-medium text-slate-300">Mover</span>
-                </button>
+                </Button>
             </div>
 
             {/* SECCIONES DE CUENTAS */}
