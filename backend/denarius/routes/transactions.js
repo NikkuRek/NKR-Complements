@@ -34,8 +34,13 @@ router.post('/', async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const { date, amount, type, account_id, bucket_id, source_bucket_id, description } = req.body;
+    const { date, amount, type, account_id, bucket_id, source_bucket_id, description, target_amount } = req.body;
     const tx_date = date ? new Date(date) : new Date();
+
+    // Determine quantities
+    // If target_amount is provided (e.g. for cross-currency bucket moves), use it for the 'receiving' side.
+    // Otherwise fallback to 'amount'.
+    const finalTargetAmount = (target_amount !== undefined && target_amount !== null) ? target_amount : amount;
 
     const [result] = await connection.query(
       'INSERT INTO transactions (date, amount, type, account_id, bucket_id, source_bucket_id, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -53,14 +58,21 @@ router.post('/', async (req, res) => {
     }
 
     if (bucket_id) {
-      if (lowerCaseType === 'income' || lowerCaseType === 'bucket_move') {
-        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [amount, bucket_id]);
-      } else if (lowerCaseType === 'expense') {
-        await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, bucket_id]);
+      if (lowerCaseType === 'income' || lowerCaseType === 'transfer_in') {
+        // Income to bucket: Generally matches source amount if same currency, or target_amount if different. 
+        // Let's assume income into bucket uses finalTargetAmount too if provided (e.g. Income in VES -> Bucket in USD).
+        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+      } else if (lowerCaseType === 'bucket_move') {
+        // Use finalTargetAmount for the receiving bucket
+        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+      } else if (lowerCaseType === 'expense' || lowerCaseType === 'transfer_out') {
+        // Expense from bucket: Use finalTargetAmount (converted value) if provided, else amount
+        await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [finalTargetAmount, bucket_id]);
       }
     }
 
     if (source_bucket_id && lowerCaseType === 'bucket_move') {
+      // Always remove 'amount' from source
       await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
     }
 
@@ -103,9 +115,10 @@ router.put('/:tx_id', async (req, res) => {
 
     const tx_date = date ? new Date(date) : new Date();
 
+    const oldType = oldTx.type.toLowerCase();
+
     // Revert old transaction logic (using oldTx values)
     if (oldTx.account_id) {
-      const oldType = oldTx.type.toLowerCase();
       if (oldType === 'income' || oldType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [oldTx.amount, oldTx.account_id]);
       } else if (oldType === 'expense' || oldType === 'transfer_out') {
@@ -130,8 +143,9 @@ router.put('/:tx_id', async (req, res) => {
     );
 
     // Apply new transaction logic (using merged values)
+    const newType = type.toLowerCase();
+
     if (account_id) {
-      const newType = type.toLowerCase();
       if (newType === 'income' || newType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, account_id]);
       } else if (newType === 'expense' || newType === 'transfer_out') {
@@ -139,9 +153,9 @@ router.put('/:tx_id', async (req, res) => {
       }
     }
     if (bucket_id) {
-      if (newType === 'income' || newType === 'bucket_move') {
+      if (newType === 'income' || newType === 'bucket_move' || newType === 'transfer_in') {
         await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [amount, bucket_id]);
-      } else if (newType === 'expense') {
+      } else if (newType === 'expense' || newType === 'transfer_out') {
         await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, bucket_id]);
       }
     }
@@ -176,8 +190,9 @@ router.delete('/:tx_id', async (req, res) => {
 
     await connection.query('DELETE FROM transactions WHERE id = ?', [tx_id]);
 
+    const oldType = tx.type.toLowerCase();
+
     if (tx.account_id) {
-      const oldType = tx.type.toLowerCase();
       if (oldType === 'income' || oldType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [tx.amount, tx.account_id]);
       } else if (oldType === 'expense' || oldType === 'transfer_out') {
@@ -186,9 +201,9 @@ router.delete('/:tx_id', async (req, res) => {
     }
 
     if (tx.bucket_id) {
-      if (oldType === 'income' || oldType === 'bucket_move') {
+      if (oldType === 'income' || oldType === 'bucket_move' || oldType === 'transfer_in') {
         await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [tx.amount, tx.bucket_id]);
-      } else if (oldType === 'expense') {
+      } else if (oldType === 'expense' || oldType === 'transfer_out') {
         await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [tx.amount, tx.bucket_id]);
       }
     }

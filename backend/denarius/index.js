@@ -6,7 +6,7 @@ const swaggerSpec = require('./swagger');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3001;
 
 const accountsRoutes = require('./routes/accounts');
 const bucketsRoutes = require('./routes/buckets');
