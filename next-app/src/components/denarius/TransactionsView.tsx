@@ -16,19 +16,25 @@ import {
 } from '@heroicons/react/24/outline';
 import { formatNumberWithLocale, getCurrencySymbol } from '@/lib/currency';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import AccountModal from '@/components/ui/AccountModal';
+import DatePicker from '@/components/ui/DatePicker';
 
 interface TransactionsViewProps {
     transactions: Transaction[];
     buckets?: any[];
     accounts?: Account[];
     onDeleteTransaction: (id: string) => Promise<void>;
+    onUpdateTransaction?: (id: string, values: Partial<Transaction>) => Promise<void>;
 }
+
+import TransactionItem from './TransactionItem';
 
 export default function TransactionsView({
     transactions,
     buckets = [],
     accounts = [],
     onDeleteTransaction,
+    onUpdateTransaction
 }: TransactionsViewProps) {
     const [filters, setFilters] = useState({
         search: '',
@@ -41,6 +47,16 @@ export default function TransactionsView({
     });
     const [showFilters, setShowFilters] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    // Edit State
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editData, setEditData] = useState<Partial<Transaction> & { id: string }>({
+        id: '',
+        amount: 0,
+        description: '',
+        date: ''
+    });
+    const [loading, setLoading] = useState(false);
 
     // Set date filter presets
     const setFilterDate = (range: 'week' | 'fortnight' | 'month') => {
@@ -185,6 +201,33 @@ export default function TransactionsView({
         setDeletingId(id);
     };
 
+    const handleEditClick = (tx: Transaction) => {
+        setEditData({
+            id: tx.id,
+            amount: Number(tx.amount),
+            description: tx.description,
+            date: new Date(tx.date).toISOString().split('T')[0] // Format for input date
+        });
+        setEditModalOpen(true);
+    };
+
+    const handleUpdateSubmit = async () => {
+        if (!onUpdateTransaction || !editData.id) return;
+        setLoading(true);
+        try {
+            await onUpdateTransaction(editData.id, {
+                amount: editData.amount,
+                description: editData.description,
+                date: editData.date ? new Date(editData.date).toISOString() : undefined
+            });
+            setEditModalOpen(false);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const confirmDelete = async () => {
         if (!deletingId) return;
         try {
@@ -205,15 +248,40 @@ export default function TransactionsView({
         }
     }, 0);
 
+    const counts = filteredTransactions.reduce((acc, tx) => {
+        if (tx.type.includes('TRANSFER') || tx.type === 'bucket_move') {
+            acc.transfers++;
+        } else if (tx.type.includes('INCOME')) {
+            acc.income++;
+        } else if (tx.type.includes('EXPENSE')) {
+            acc.expenses++;
+        }
+        return acc;
+    }, { income: 0, expenses: 0, transfers: 0 });
+
     return (
         <div className="animate-fade-in space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between px-2">
                 <h3 className="text-xl font-bold text-white">Historial</h3>
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">
-                        ${formatNumberWithLocale(total)}
-                    </span>
+                    <div className="flex gap-2">
+                        {counts.income > 0 && (
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">
+                                {counts.income}
+                            </span>
+                        )}
+                        {counts.expenses > 0 && (
+                            <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">
+                                {counts.expenses}
+                            </span>
+                        )}
+                        {counts.transfers > 0 && (
+                            <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg">
+                                {counts.transfers}
+                            </span>
+                        )}
+                    </div>
                     <button
                         onClick={() => setShowFilters(!showFilters)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition ${showFilters
@@ -249,26 +317,26 @@ export default function TransactionsView({
                             <label className="text-[9px] uppercase font-bold text-slate-500 ml-1 mb-1 block">
                                 Desde
                             </label>
-                            <input
-                                type="date"
+                            <DatePicker
+                                id="filter-start-date"
                                 value={filters.startDate}
-                                onChange={(e) =>
-                                    setFilters({ ...filters, startDate: e.target.value })
+                                onChange={(date) =>
+                                    setFilters({ ...filters, startDate: date })
                                 }
-                                className="w-full input-modern p-2 rounded-xl text-xs text-white"
+                                placeholder="DD/MM/AAAA"
                             />
                         </div>
                         <div>
                             <label className="text-[9px] uppercase font-bold text-slate-500 ml-1 mb-1 block">
                                 Hasta
                             </label>
-                            <input
-                                type="date"
+                            <DatePicker
+                                id="filter-end-date"
                                 value={filters.endDate}
-                                onChange={(e) =>
-                                    setFilters({ ...filters, endDate: e.target.value })
+                                onChange={(date) =>
+                                    setFilters({ ...filters, endDate: date })
                                 }
-                                className="w-full input-modern p-2 rounded-xl text-xs text-white"
+                                placeholder="DD/MM/AAAA"
                             />
                         </div>
                     </div>
@@ -369,93 +437,69 @@ export default function TransactionsView({
                         <p className="text-xs text-slate-500 mt-1">Ajusta los filtros o crea un movimiento</p>
                     </div>
                 ) : (
-                    filteredTransactions.map((tx, index) => {
-                        const bucket = buckets.find(b => String(b.id) === String(tx.bucket_id));
-                        const sourceBucket = buckets.find(b => String(b.id) === String(tx.source_bucket_id));
-                        const style = getTransactionStyle(tx.type);
-                        const Icon = style.icon;
-                        const isExpense = tx.type.includes('EXPENSE') || tx.type.includes('OUT');
-                        const isBucketMove = tx.type === 'bucket_move';
-
-                        // Determine Display Amount and Currency
-                        let displayAmount = Number(tx.amount);
-                        let displayCurrency = accounts.find(a => String(a.id) === String(tx.account_id))?.currency || 'USD';
-
-                        if (isBucketMove) {
-                            displayAmount = Number(tx.target_amount ?? tx.amount);
-                            if (bucket) displayCurrency = bucket.currency;
-                        } else if (bucket && !tx.account_id) {
-                            // If dealing with pure bucket logic (rare without account, but possible in future)
-                            displayCurrency = bucket.currency;
-                        }
-
-                        return (
-                            <div
-                                key={tx.id}
-                                className="group relative overflow-hidden rounded-2xl glass-panel p-4 border border-white/5 shadow-lg transition-all duration-300 hover:scale-[1.01] hover:shadow-xl hover:border-white/10 animate-fade-in"
-                                style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                                {/* Gradient Background */}
-                                <div className={`absolute inset-0 bg-gradient-to-r ${style.gradient} opacity-40 transition-opacity group-hover:opacity-60`}></div>
-
-                                <div className="relative z-10 flex items-center gap-4">
-                                    {/* Icon Box */}
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${style.bg} ${style.color} shadow-inner bg-opacity-50 backdrop-blur-md border ${style.border}`}>
-                                        <Icon className="w-6 h-6" />
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-start">
-                                            <h4 className="font-bold text-white truncate pr-2 text-sm leading-tight flex items-center gap-2">
-                                                {tx.description}
-                                            </h4>
-                                            <span className={`font-mono font-bold text-sm ${style.color} whitespace-nowrap`}>
-                                                {isExpense ? '-' : (isBucketMove ? '' : '+')}{getCurrencySymbol(displayCurrency)}{formatNumberWithLocale(displayAmount)}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                                            <span className="flex items-center text-[10px] text-slate-400 font-medium">
-                                                <CalendarIcon className="w-3 h-3 mr-1 opacity-70" />
-                                                {format(new Date(tx.date), 'dd MMM, HH:mm')}
-                                            </span>
-
-                                            {(bucket || sourceBucket) && (
-                                                <span className="flex items-center text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
-                                                    <ArchiveBoxIcon className="w-3 h-3 mr-1" />
-                                                    {sourceBucket ? (
-                                                        <>
-                                                            {sourceBucket.name}
-                                                            <span className="mx-1 opacity-50">&rarr;</span>
-                                                            {bucket ? bucket.name : '?'}
-                                                        </>
-                                                    ) : (
-                                                        bucket?.name
-                                                    )}
-                                                </span>
-                                            )}
-
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-slate-800/50 rounded text-slate-500 font-mono border border-white/5">
-                                                {formatType(tx.type)}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Delete Action (visible on hover) */}
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(tx.id); }}
-                                        className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:text-white hover:bg-rose-500 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm self-center border border-transparent hover:border-rose-400/30 hover:shadow-lg hover:shadow-rose-500/20"
-                                        title="Eliminar transacción"
-                                    >
-                                        <TrashIcon className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })
+                    filteredTransactions.map((tx, index) => (
+                        <TransactionItem
+                            key={tx.id}
+                            tx={tx}
+                            buckets={buckets}
+                            accounts={accounts}
+                            onDelete={handleDeleteClick}
+                            onEdit={handleEditClick}
+                            index={index}
+                        />
+                    ))
                 )}
             </div>
+
+            {/* Edit Modal */}
+            <AccountModal
+                isOpen={editModalOpen}
+                onClose={() => setEditModalOpen(false)}
+                title="Editar Transacción"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Descripción</label>
+                        <input
+                            type="text"
+                            value={editData.description}
+                            onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                            placeholder="Descripción"
+                            className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500"
+                        />
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="w-1/2">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Monto</label>
+                            <input
+                                type="number"
+                                value={editData.amount}
+                                onChange={(e) => setEditData({ ...editData, amount: parseFloat(e.target.value) })}
+                                placeholder="0.00"
+                                step="0.01"
+                                className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500"
+                            />
+                        </div>
+                        <div className="w-1/2">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Fecha</label>
+                            <input
+                                type="date"
+                                value={editData.date ? String(editData.date) : ''}
+                                onChange={(e) => setEditData({ ...editData, date: e.target.value })}
+                                className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500 [color-scheme:dark]"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleUpdateSubmit}
+                        disabled={loading || !editData.description || !editData.amount}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-600/20 transition transform active:scale-95 disabled:opacity-50 mt-2"
+                    >
+                        {loading ? 'Guardando...' : 'Guardar Cambios'}
+                    </button>
+                </div>
+            </AccountModal>
 
 
             <ConfirmModal

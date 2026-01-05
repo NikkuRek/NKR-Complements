@@ -229,6 +229,16 @@ export function useDenarius() {
         }
     };
 
+    const updateTransaction = async (id: string, values: Partial<Transaction>) => {
+        try {
+            await denariusApi.put(`/transactions/${id}`, values);
+            await fetchData();
+        } catch (error) {
+            console.error('Error updating transaction:', error);
+            throw error;
+        }
+    };
+
     const deleteTransaction = async (id: string) => {
         try {
             await denariusApi.delete(`/transactions/${id}`);
@@ -395,6 +405,7 @@ export function useDenarius() {
         deleteBucket,
         transferBucket,
         addTransaction,
+        updateTransaction,
         deleteTransaction,
         addWishlistItem,
         updateWishlistItem,

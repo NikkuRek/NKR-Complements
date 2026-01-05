@@ -24,6 +24,67 @@ export default function CalculatorView({
     const [rateInfo, setRateInfo] = useState<string>('');
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    // Calculator State
+    const [calcDisplay, setCalcDisplay] = useState('');
+    const [calcExpression, setCalcExpression] = useState('');
+    const [lastWasResult, setLastWasResult] = useState(false);
+
+    // Calculator Logic
+    const handleCalcInput = (val: string) => {
+        if (val === 'C') {
+            setCalcDisplay('');
+            setCalcExpression('');
+            setLastWasResult(false);
+            return;
+        }
+
+        if (val === 'DEL') {
+            if (lastWasResult) {
+                setCalcDisplay('');
+                setCalcExpression('');
+                setLastWasResult(false);
+            } else {
+                setCalcDisplay(prev => prev.slice(0, -1));
+            }
+            return;
+        }
+
+        if (val === '=') {
+            try {
+                // Safety check: only allow numbers and operators
+                const sanitized = (calcExpression + calcDisplay).replace(/[^0-9+\-*/.%]/g, '');
+                // Basic eval replacement
+                // eslint-disable-next-line no-new-func
+                let res = new Function('return ' + sanitized)();
+
+                // Format result (max decimals)
+                if (!Number.isInteger(res)) res = parseFloat(res.toFixed(4));
+
+                setCalcDisplay(String(res));
+                setCalcExpression('');
+                setLastWasResult(true);
+            } catch (e) {
+                setCalcDisplay('Error');
+                setLastWasResult(true);
+            }
+            return;
+        }
+
+        if (['+', '-', '*', '/', '%'].includes(val)) {
+            setCalcExpression(prev => prev + (calcDisplay || '0') + val);
+            setCalcDisplay('');
+            setLastWasResult(false);
+        } else {
+            // Number or Dot
+            if (lastWasResult) {
+                setCalcDisplay(val);
+                setLastWasResult(false);
+            } else {
+                setCalcDisplay(prev => prev + val);
+            }
+        }
+    };
+
     // Run calculator whenever inputs change
     useEffect(() => {
         runCalculator();
@@ -206,6 +267,71 @@ export default function CalculatorView({
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Simple Calculator */}
+            <div className="mt-6 glass-panel p-6 rounded-[2rem] border border-white/10 shadow-2xl relative overflow-hidden bg-slate-900/40 backdrop-blur-xl">
+                {/* Decorative Background for Calc */}
+                <div className="absolute -top-10 -left-10 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div className="mb-6 bg-black/40 p-5 rounded-2xl text-right border border-white/5 shadow-inner">
+                    <div className="text-xs text-slate-400 min-h-[1.2em] font-medium tracking-wide mb-1 opacity-70">{calcExpression}</div>
+                    <div className="text-4xl font-mono font-bold text-white truncate tracking-tighter drop-shadow-sm">{calcDisplay || '0'}</div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-3">
+                    {['C', 'DEL', '%', '/'].map((btn) => (
+                        <button
+                            key={btn}
+                            onClick={() => handleCalcInput(btn)}
+                            className={`h-16 rounded-2xl font-bold text-lg transition-all duration-200 active:scale-90 hover:brightness-110 shadow-lg ${btn === 'C'
+                                    ? 'text-rose-200 bg-rose-500/20 border border-rose-500/20 hover:bg-rose-500/30'
+                                    : 'text-indigo-200 bg-indigo-500/20 border border-indigo-500/20 hover:bg-indigo-500/30'
+                                }`}
+                        >
+                            {btn}
+                        </button>
+                    ))}
+                    {['7', '8', '9', '*'].map((btn) => (
+                        <button
+                            key={btn}
+                            onClick={() => handleCalcInput(btn)}
+                            className={`h-16 rounded-2xl font-bold text-xl transition-all duration-200 active:scale-90 shadow-lg ${['*', '/'].includes(btn)
+                                    ? 'text-indigo-200 bg-indigo-500/20 border border-indigo-500/20 hover:bg-indigo-500/30'
+                                    : 'text-slate-200 bg-slate-800/80 border border-white/5 hover:bg-slate-700 hover:border-white/10'
+                                }`}
+                        >
+                            {btn === '*' ? '×' : btn}
+                        </button>
+                    ))}
+                    {['4', '5', '6', '-'].map((btn) => (
+                        <button
+                            key={btn}
+                            onClick={() => handleCalcInput(btn)}
+                            className={`h-16 rounded-2xl font-bold text-xl transition-all duration-200 active:scale-90 shadow-lg ${['-'].includes(btn)
+                                    ? 'text-indigo-200 bg-indigo-500/20 border border-indigo-500/20 hover:bg-indigo-500/30'
+                                    : 'text-slate-200 bg-slate-800/80 border border-white/5 hover:bg-slate-700 hover:border-white/10'
+                                }`}
+                        >
+                            {btn}
+                        </button>
+                    ))}
+                    {['1', '2', '3', '+'].map((btn) => (
+                        <button
+                            key={btn}
+                            onClick={() => handleCalcInput(btn)}
+                            className={`h-16 rounded-2xl font-bold text-xl transition-all duration-200 active:scale-90 shadow-lg ${['+'].includes(btn)
+                                    ? 'text-indigo-200 bg-indigo-500/20 border border-indigo-500/20 hover:bg-indigo-500/30'
+                                    : 'text-slate-200 bg-slate-800/80 border border-white/5 hover:bg-slate-700 hover:border-white/10'
+                                }`}
+                        >
+                            {btn}
+                        </button>
+                    ))}
+                    <button onClick={() => handleCalcInput('0')} className="col-span-2 h-16 rounded-2xl font-bold text-xl text-slate-200 bg-slate-800/80 border border-white/5 hover:bg-slate-700 hover:border-white/10 transition-all duration-200 active:scale-90 shadow-lg">0</button>
+                    <button onClick={() => handleCalcInput('.')} className="h-16 rounded-2xl font-bold text-xl text-slate-200 bg-slate-800/80 border border-white/5 hover:bg-slate-700 hover:border-white/10 transition-all duration-200 active:scale-90 shadow-lg">.</button>
+                    <button onClick={() => handleCalcInput('=')} className="h-16 rounded-2xl font-bold text-xl text-white bg-gradient-to-br from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 shadow-lg shadow-indigo-500/40 border border-indigo-400/20 transition-all duration-200 active:scale-90">=</button>
+                </div>
             </div>
         </div>
     );

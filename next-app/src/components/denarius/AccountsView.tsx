@@ -721,10 +721,10 @@ export default function AccountsView({
                     className="!rounded-2xl !p-4 flex-col items-center justify-center gap-2 h-auto bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50"
                     onClick={() => setTransferModalOpen(true)}
                 >
-                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20 transition">
-                        <i className="fas fa-exchange-alt text-indigo-400 text-sm"></i>
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/90 flex items-center justify-center group-hover:bg-indigo-500/20 transition">
+                        <i className="fas fa-exchange-alt text-white text-sm"></i>
                     </div>
-                    <span className="text-[10px] font-medium text-slate-300">Mover</span>
+                    <span className="text-[10px] font-medium text-white/90">Mover</span>
                 </Button>
             </div>
 

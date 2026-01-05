@@ -18,7 +18,7 @@ import {
     ChartBarIcon
 } from '@heroicons/react/24/outline';
 
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+const GEMINI = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 const DOLAR_API_URL = process.env.NEXT_PUBLIC_DOLAR_API_URL || 'https://ve.dolarapi.com/v1/dolares';
 
 type View = 'accounts' | 'budgets' | 'transactions' | 'wishlist' | 'calculator' | 'statistics';
@@ -170,6 +170,7 @@ export default function DenariusPage() {
                                     buckets={denarius.buckets}
                                     accounts={denarius.accounts}
                                     onDeleteTransaction={denarius.deleteTransaction}
+                                    onUpdateTransaction={denarius.updateTransaction}
                                 />
                             )}
                             {currentView === 'wishlist' && (
@@ -191,7 +192,7 @@ export default function DenariusPage() {
                                     transactions={denarius.transactions}
                                     accounts={denarius.accounts}
                                     buckets={denarius.buckets}
-                                    apiKey={GEMINI_API_KEY}
+                                    apiKey={GEMINI}
                                 />
                             )}
                         </>
@@ -208,13 +209,12 @@ export default function DenariusPage() {
                             <button
                                 key={item.id}
                                 onClick={() => setCurrentView(item.id)}
-                                className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition ${isActive
+                                className={`flex flex-col items-center justify-center py-3 px-3 rounded-xl transition ${isActive
                                     ? 'bg-indigo-600 text-white'
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                     }`}
                             >
-                                <Icon className="w-5 h-5" />
-                                <span className="text-xs font-medium">{item.label}</span>
+                                <Icon className="w-6 h-6" />
                             </button>
                         );
                     })}

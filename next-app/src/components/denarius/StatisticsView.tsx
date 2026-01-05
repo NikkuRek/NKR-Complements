@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import React, { useState, useRef, useEffect } from 'react';
+import { GoogleGenerativeAI, ChatSession } from '@google/generative-ai';
 import { Account, Transaction, Bucket } from '@/types/denarius';
-import { SparklesIcon, ChartBarIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, ChartBarIcon, ArrowPathIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
 
 interface StatisticsViewProps {
@@ -11,10 +11,26 @@ interface StatisticsViewProps {
     apiKey: string;
 }
 
+interface ChatMessage {
+    role: 'user' | 'model';
+    text: string;
+}
+
 export default function StatisticsView({ transactions, accounts, buckets, apiKey }: StatisticsViewProps) {
-    const [analysis, setAnalysis] = useState<string>('');
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [chatSession, setChatSession] = useState<ChatSession | null>(null);
+    const [inputValue, setInputValue] = useState('');
+    const chatEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const generateAnalysis = async () => {
         if (!apiKey) {
@@ -24,6 +40,7 @@ export default function StatisticsView({ transactions, accounts, buckets, apiKey
 
         setLoading(true);
         setError(null);
+        setMessages([]); // Clear previous chat
 
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
@@ -58,7 +75,7 @@ export default function StatisticsView({ transactions, accounts, buckets, apiKey
                 console.warn('Error fetching exchange rate, using default:', e);
             }
 
-            const currentDate = new Date().toISOString().split('T')[0]; // Fecha actual YYYY-MM-DD
+            const currentDate = new Date().toISOString().split('T')[0];
 
             const prompt = `
                 # ROL
@@ -105,17 +122,29 @@ export default function StatisticsView({ transactions, accounts, buckets, apiKey
                 2.  **Deudas:** [Instrucción específica sobre qué deuda pagar primero].
                 3.  **Ajuste de Gastos:** [Consejo específico sobre dónde cortar gastos, ej. "Baja el gasto en X categoría"].
 
-                ## � Comentario de Denarius
+                ## 💬 Comentario de Denarius
                 [Un mensaje corto, motivador y personalizado. Si el usuario compró algo innecesario, haz una broma amable pero firme. Si lo hizo bien, felicítalo].
 
                 ---
                 **Nota:** Utiliza negritas para resaltar cifras importantes. Sé directo pero amigable. No uses LaTeX, usa formato de texto estándar para monedas ($).
             `;
 
-            const result = await model.generateContent(prompt);
+            const chat = model.startChat({
+                history: [
+                    {
+                        role: "user",
+                        parts: [{ text: "Hola Denarius, analiza mis finanzas actuales por favor." }],
+                    },
+                ],
+            });
+
+            setChatSession(chat);
+
+            const result = await chat.sendMessage(prompt);
             const response = await result.response;
             const text = response.text();
-            setAnalysis(text);
+
+            setMessages([{ role: 'model', text }]);
 
         } catch (err: any) {
             console.error(err);
@@ -125,116 +154,203 @@ export default function StatisticsView({ transactions, accounts, buckets, apiKey
         }
     };
 
-    return (
-        <div className="space-y-8 animate-fade-in pb-10">
-            {/* Header Section */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border border-white/10 p-8 shadow-2xl">
-                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-purple-500 rounded-full blur-3xl opacity-20"></div>
-                <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-indigo-500 rounded-full blur-3xl opacity-20"></div>
+    const handleSendMessage = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!inputValue.trim() || !chatSession) return;
 
-                <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/20">
-                        <SparklesIcon className="w-10 h-10 text-yellow-300" />
+        const userMsg = inputValue.trim();
+        setInputValue('');
+        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+        setLoading(true);
+
+        try {
+            const result = await chatSession.sendMessage(userMsg);
+            const response = await result.response;
+            const text = response.text();
+            setMessages(prev => [...prev, { role: 'model', text }]);
+        } catch (err: any) {
+            console.error(err);
+            setMessages(prev => [...prev, { role: 'model', text: 'Error: No pude procesar tu mensaje. Intenta de nuevo.' }]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in pb-24">
+            {/* Header Section */}
+            <div className="relative overflow-hidden rounded-[2rem] bg-slate-900 border border-white/10 p-8 shadow-2xl group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition duration-1000" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition duration-1000" />
+
+                <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-2 shadow-inner backdrop-blur-md">
+                        <SparklesIcon className="w-8 h-8 text-indigo-400" />
                     </div>
-                    <div>
-                        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-200">
-                            Denarius AI
-                        </h2>
-                        <p className="text-indigo-200/80 text-sm mt-1 max-w-sm">
-                            Tu asistente financiero personal impulsado por inteligencia artificial.
-                        </p>
-                    </div>
+                    <h2 className="text-3xl font-bold text-white tracking-tight">
+                        Denarius <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">AI Insights</span>
+                    </h2>
+                    <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
+                        Análisis financiero inteligente y asistente personal en tiempo real.
+                    </p>
                 </div>
             </div>
 
-            {/* Action Section */}
-            {!analysis && !loading && (
-                <div className="flex justify-center">
+            {/* Action Section (Initial) */}
+            {messages.length === 0 && !loading && (
+                <div className="glass-panel p-8 rounded-[2rem] border border-white/5 bg-gradient-to-b from-slate-800/40 to-slate-900/40 text-center space-y-6">
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white">¿Listo para tu diagnóstico?</h3>
+                        <p className="text-xs text-slate-400">Denarius analizará tus últimas 50 transacciones y el estado de tus cuentas.</p>
+                    </div>
+
                     <button
                         onClick={generateAnalysis}
-                        className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 font-bold text-white transition-all duration-200 bg-indigo-600 font-lg rounded-2xl hover:bg-indigo-500 hover:scale-105 shadow-lg shadow-indigo-600/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600"
+                        className="group relative inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 font-bold text-white transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40"
                     >
-                        <ChartBarIcon className="w-6 h-6 transition-transform group-hover:rotate-12" />
-                        <span>Generar Nuevo Análisis</span>
-                        <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 transition-opacity duration-200 group-hover:opacity-100 blur-lg"></div>
+                        <ChartBarIcon className="w-5 h-5" />
+                        <span>Generar Análisis con AI</span>
+                        <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
                     </button>
+                    {error && <p className="text-rose-400 text-sm mt-2">{error}</p>}
                 </div>
             )}
 
             {/* Loading State */}
-            {loading && (
-                <div className="flex flex-col items-center justify-center py-12 space-y-6">
-                    <div className="relative w-20 h-20">
-                        <div className="absolute inset-0 border-t-2 border-r-2 border-indigo-400 rounded-full animate-spin"></div>
-                        <div className="absolute inset-2 border-l-2 border-b-2 border-purple-400 rounded-full animate-spin-reverse"></div>
+            {loading && messages.length === 0 && ( // Only show full loading if no messages yet
+                <div className="glass-panel p-12 rounded-[2rem] border border-white/5 flex flex-col items-center justify-center space-y-8 min-h-[400px]">
+                    <div className="relative w-24 h-24">
+                        <div className="absolute inset-0 border-4 border-indigo-500/30 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-t-indigo-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                        <div className="absolute inset-4 border-4 border-purple-500/30 rounded-full"></div>
+                        <div className="absolute inset-4 border-4 border-b-purple-500 border-t-transparent border-l-transparent border-r-transparent rounded-full animate-spin-reverse"></div>
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <SparklesIcon className="w-6 h-6 text-yellow-200 animate-pulse" />
+                            <SparklesIcon className="w-8 h-8 text-white animate-pulse" />
                         </div>
                     </div>
-                    <div className="text-center space-y-1">
-                        <p className="text-lg font-medium text-white">Analizando tus finanzas...</p>
-                        <p className="text-sm text-slate-400">Esto puede tomar unos segundos</p>
+                    <div className="text-center space-y-2 animate-pulse">
+                        <p className="text-xl font-bold text-white">Procesando Datos</p>
+                        <p className="text-sm text-slate-400">Conectando con Gemini AI...</p>
                     </div>
                 </div>
             )}
 
             {/* Error Message */}
-            {error && (
-                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-200 p-6 rounded-2xl text-center space-y-3 backdrop-blur-sm">
-                    <p className="font-medium">{error}</p>
+            {error && messages.length === 0 && ( // Only show full error if no messages yet
+                <div className="glass-panel p-6 rounded-2xl border border-rose-500/30 bg-rose-500/5 flex flex-col items-center text-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400">
+                        <ChartBarIcon className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="font-bold text-rose-200 mb-1">Algo salió mal</p>
+                        <p className="text-sm text-rose-200/60">{error}</p>
+                    </div>
                     <button
                         onClick={generateAnalysis}
-                        className="text-white bg-rose-500/20 hover:bg-rose-500/30 px-4 py-2 rounded-lg text-sm transition"
+                        className="px-6 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-sm font-bold transition"
                     >
-                        Intentar de nuevo
+                        Reintentar
                     </button>
                 </div>
             )}
 
-            {/* Analysis Result */}
-            {analysis && (
+            {/* Chat Interface */}
+            {messages.length > 0 && (
                 <div className="space-y-4 animate-slide-up">
-                    <div className="glass-panel rounded-3xl border border-white/10 shadow-2xl overflow-hidden bg-slate-900/60 backdrop-blur-xl">
-                        {/* Content Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
-                            <div className="flex items-center gap-2">
-                                <SparklesIcon className="w-4 h-4 text-indigo-400" />
-                                <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">Reporte Generado</span>
-                            </div>
-                            <button
-                                onClick={generateAnalysis}
-                                className="text-xs text-slate-400 hover:text-white transition flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full"
-                            >
-                                <ArrowPathIcon className="w-3.5 h-3.5" />
-                                Regenerar
-                            </button>
+                    <div className="flex items-center justify-between px-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Sesión Activa</span>
                         </div>
-
-                        {/* Markdown Content */}
-                        <div className="p-6 sm:p-8">
-                            <div className="prose prose-invert prose-indigo max-w-none">
-                                <ReactMarkdown
-                                    components={{
-                                        h1: ({ node, ...props }) => <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-6 pb-2 border-b border-white/10" {...props} />,
-                                        h2: ({ node, ...props }) => <h2 className="text-xl font-semibold text-indigo-300 mt-8 mb-4 flex items-center gap-2" {...props} />,
-                                        h3: ({ node, ...props }) => <h3 className="text-lg font-semibold text-white mt-6 mb-3" {...props} />,
-                                        p: ({ node, ...props }) => <p className="text-slate-300 leading-relaxed mb-4" {...props} />,
-                                        ul: ({ node, ...props }) => <ul className="space-y-2 mb-6" {...props} />,
-                                        li: ({ node, ...props }) => <li className="flex items-start gap-2 text-slate-300" {...props}><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" /><span>{props.children}</span></li>,
-                                        strong: ({ node, ...props }) => <strong className="text-white font-semibold" {...props} />,
-                                        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-indigo-500/50 pl-4 py-1 my-4 bg-indigo-500/5 rounded-r-lg" {...props} />,
-                                    }}
-                                >
-                                    {analysis}
-                                </ReactMarkdown>
-                            </div>
-                        </div>
+                        <button
+                            onClick={generateAnalysis}
+                            className="text-xs text-slate-400 hover:text-white transition flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full"
+                        >
+                            <ArrowPathIcon className="w-3.5 h-3.5" />
+                            Reiniciar Sesión
+                        </button>
                     </div>
 
-                    <div className="text-center">
-                        <p className="text-[10px] text-slate-500">
-                            Generado con Gemini 1.5 Flash • La información puede no ser exacta
-                        </p>
+                    <div className="space-y-6">
+                        {messages.map((msg, idx) => (
+                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div
+                                    className={`max-w-[100%] sm:max-w-[85%] rounded-[2rem] p-6 shadow-xl backdrop-blur-xl border ${msg.role === 'user'
+                                            ? 'bg-indigo-600/80 border-indigo-500/30 text-white rounded-tr-none'
+                                            : 'bg-[#0F172A]/80 border-white/10 text-slate-200 rounded-tl-none'
+                                        }`}
+                                >
+                                    {msg.role === 'user' ? (
+                                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                                    ) : (
+                                        <div className="prose prose-invert prose-indigo max-w-none prose-headings:font-bold prose-p:text-slate-300 prose-strong:text-white prose-li:text-slate-300">
+                                            <ReactMarkdown
+                                                components={{
+                                                    h1: ({ ...props }) => <h1 className="text-2xl mb-6 pb-4 border-b border-white/10 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400" {...props} />,
+                                                    h2: ({ ...props }) => <div className="mt-8 mb-4 flex items-center gap-3">
+                                                        <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/50 to-transparent"></div>
+                                                        <h2 className="text-lg text-indigo-300 m-0 whitespace-nowrap" {...props} />
+                                                        <div className="h-px flex-1 bg-gradient-to-l from-indigo-500/50 to-transparent"></div>
+                                                    </div>,
+                                                    h3: ({ ...props }) => <h3 className="text-base text-white mt-6 mb-2" {...props} />,
+                                                    p: ({ ...props }) => <p className="mb-4 text-sm leading-relaxed text-slate-300" {...props} />,
+                                                    ul: ({ ...props }) => <ul className="space-y-3 mb-6" {...props} />,
+                                                    li: ({ children, ...props }) => {
+                                                        const hasEmoji = Array.isArray(children) && typeof children[0] === 'string' && /^[🟢🔴💡]/.test(children[0]);
+                                                        if (hasEmoji) {
+                                                            return <li className="flex items-start gap-3 text-sm bg-white/[0.03] p-3 rounded-xl border border-white/5" {...props}>{children}</li>;
+                                                        }
+                                                        return (
+                                                            <li className="flex items-start gap-3 text-sm" {...props}>
+                                                                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                                                                <span>{children}</span>
+                                                            </li>
+                                                        );
+                                                    },
+                                                    strong: ({ ...props }) => <strong className="text-white font-bold" {...props} />,
+                                                    blockquote: ({ ...props }) => <blockquote className="border-l-4 border-purple-500/50 pl-4 py-3 my-6 bg-gradient-to-r from-purple-500/10 to-transparent rounded-r-xl italic text-purple-200 text-sm" {...props} />,
+                                                }}
+                                            >
+                                                {msg.text}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                        {loading && (
+                            <div className="flex justify-start">
+                                <div className="bg-[#0F172A]/80 border border-white/10 rounded-[2rem] rounded-tl-none p-6 flex items-center gap-3">
+                                    <SparklesIcon className="w-5 h-5 text-indigo-400 animate-pulse" />
+                                    <span className="text-sm text-slate-400">Denarius está escribiendo...</span>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Input Area */}
+                    <div className="sticky bottom-6 mt-4">
+                        <form onSubmit={handleSendMessage} className="relative group">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-focus-within:opacity-75 transition duration-1000"></div>
+                            <div className="relative flex items-center">
+                                <input
+                                    type="text"
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    placeholder="Pregúntale algo más a Denarius..."
+                                    className="w-full bg-slate-900 text-white placeholder-slate-500 border border-white/10 rounded-2xl py-4 pl-6 pr-14 focus:outline-none focus:bg-slate-800 transition shadow-xl"
+                                    disabled={loading}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={loading || !inputValue.trim()}
+                                    className="absolute right-2 p-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors"
+                                >
+                                    <PaperAirplaneIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

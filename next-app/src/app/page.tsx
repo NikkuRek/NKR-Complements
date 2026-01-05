@@ -63,11 +63,9 @@ export default function HomePage() {
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-bold text-xl text-white mb-1 group-hover:text-primary-300 transition">
-                                            Dena
+                                            Denarius
                                         </h3>
-                                        <h3 className="font-bold text-xl text-blue-500 mb-1 group-hover:text-primary-300 transition">
-                                            rius
-                                        </h3>
+                                        <span className="badge badge-success">Finanzas</span>
                                     </div>
                                 </div>
                                 <p className="text-sm text-slate-300 leading-relaxed">

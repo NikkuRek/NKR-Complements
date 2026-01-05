@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 :root {
+  font-size: 92.5%;
+  /* Reduces base size to ~14.8px */
   --background: #0f172a;
   --foreground: #f1f5f9;
   --primary: #6366f1;

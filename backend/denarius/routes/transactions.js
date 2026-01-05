@@ -42,6 +42,47 @@ router.post('/', async (req, res) => {
     // Otherwise fallback to 'amount'.
     const finalTargetAmount = (target_amount !== undefined && target_amount !== null) ? target_amount : amount;
 
+    // Special Handling for Cross-Currency Bucket Moves
+    if (type === 'bucket_move' && source_bucket_id && bucket_id) {
+      console.log('Processing bucket_move:', { source_bucket_id, bucket_id, amount, target_amount });
+
+      const [buckets] = await connection.query('SELECT id, currency, name FROM buckets WHERE id IN (?, ?)', [source_bucket_id, bucket_id]);
+      const sourceB = buckets.find(b => String(b.id) === String(source_bucket_id));
+      const targetB = buckets.find(b => String(b.id) === String(bucket_id));
+
+      if (sourceB && targetB) {
+        console.log('Buckets found:', {
+          source: { id: sourceB.id, currency: sourceB.currency },
+          target: { id: targetB.id, currency: targetB.currency }
+        });
+
+        if (sourceB.currency.trim() !== targetB.currency.trim()) {
+          console.log('Splitting cross-currency transfer');
+
+          // Create 2 Separate Transactions
+
+          // 1. Outgoing from Source
+          const descriptionOut = description || `Transferencia a ${targetB.name}`;
+          await connection.query(
+            'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
+            [tx_date, amount, 'TRANSFER_OUT', source_bucket_id, descriptionOut]
+          );
+          await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
+
+          // 2. Incoming to Target
+          const descriptionIn = description || `Transferencia desde ${sourceB.name}`;
+          await connection.query(
+            'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
+            [tx_date, finalTargetAmount, 'TRANSFER_IN', bucket_id, descriptionIn]
+          );
+          await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+
+          await connection.commit();
+          return res.status(201).json({ message: 'Transferencia multimoneda realizada' });
+        }
+      }
+    }
+
     const [result] = await connection.query(
       'INSERT INTO transactions (date, amount, type, account_id, bucket_id, source_bucket_id, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [tx_date, amount, type, account_id, bucket_id, source_bucket_id, description]
