@@ -190,7 +190,8 @@ export function useDenarius() {
         accountId: number | null,
         bucketId: number | null,
         description: string,
-        targetAmount?: number
+        targetAmount?: number,
+        date?: string
     ) => {
         amount = parseFloat(String(amount));
 
@@ -213,7 +214,7 @@ export function useDenarius() {
 
         try {
             await denariusApi.post('/transactions', {
-                date: new Date().toISOString(),
+                date: date ? new Date(date).toISOString() : new Date().toISOString(),
                 amount,
                 type,
                 account_id: accountId,

@@ -3,6 +3,7 @@ import AccountModal from '@/components/ui/AccountModal';
 import { Account, Bucket, TransactionType, Currency } from '@/types/denarius';
 import { getCurrencySymbol, formatNumberWithLocale } from '@/lib/currency';
 import { BanknotesIcon } from '@heroicons/react/24/outline';
+import DatePicker from '@/components/ui/DatePicker';
 
 interface TransactionModalProps {
     isOpen: boolean;
@@ -11,7 +12,7 @@ interface TransactionModalProps {
     accounts: Account[];
     buckets: Bucket[];
     rates: { USD: number; USDT: number };
-    onSave: (amount: number, accountId: number, bucketId: number | null, description: string, targetAmount?: number) => Promise<void>;
+    onSave: (amount: number, accountId: number, bucketId: number | null, description: string, targetAmount?: number, date?: string) => Promise<void>;
     onRequestSettle?: () => void;
 }
 
@@ -25,12 +26,14 @@ export default function TransactionModal({
     onSave,
     onRequestSettle,
 }: TransactionModalProps) {
+    const [date, setDate] = useState('');
+    const [time, setTime] = useState('');
     const [amount, setAmount] = useState('');
     const [accountId, setAccountId] = useState('');
     const [bucketId, setBucketId] = useState('');
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
-    const [autoBucketAmount, setAutoBucketAmount] = useState<string | null>(null);
+    const [bucketAmount, setBucketAmount] = useState('');
 
     // Reset form when opening
     useEffect(() => {
@@ -38,7 +41,19 @@ export default function TransactionModal({
             setAmount('');
             setDescription('');
             setBucketId('');
-            setAutoBucketAmount(null);
+            setBucketAmount('');
+            // Set default date to today in YYYY-MM-DD
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            setDate(`${year}-${month}-${day}`);
+            
+            // Set default time to now HH:mm
+            const hours = String(today.getHours()).padStart(2, '0');
+            const minutes = String(today.getMinutes()).padStart(2, '0');
+            setTime(`${hours}:${minutes}`);
+            
             // Pre-select first account if available
             if (accounts.length > 0 && !accountId) {
                 setAccountId(accounts[0].id);
@@ -49,7 +64,7 @@ export default function TransactionModal({
     // Auto-calculate bucket amount on change
     useEffect(() => {
         if (!amount || !accountId || !bucketId) {
-            setAutoBucketAmount(null);
+            setBucketAmount('');
             return;
         }
 
@@ -57,7 +72,7 @@ export default function TransactionModal({
         const buck = buckets.find(b => String(b.id) === bucketId);
 
         if (!acc || !buck || acc.currency === buck.currency) {
-            setAutoBucketAmount(null);
+            setBucketAmount('');
             return;
         }
 
@@ -65,11 +80,6 @@ export default function TransactionModal({
         if (isNaN(val)) return;
 
         // Conversion Logic: Account -> Bucket
-        // Spending FROM Account (Source Value) -> TO Bucket (Target Value? No, Expenses reduce both).
-        // If I spend 100 VES from VES Account, I am reducing X USD from USD Bucket.
-        // So we need to convert VES Amount -> USD Amount.
-
-        // Base currency map (simplified for VES/USD/USDT)
         let valInVes = val;
         // 1. Convert Account Amount to VES
         if (acc.currency === 'USD') valInVes = val * rates.USD;
@@ -82,7 +92,7 @@ export default function TransactionModal({
         else if (buck.currency === 'USDT') bucketVal = valInVes / rates.USDT;
         else if (buck.currency === 'VES') bucketVal = valInVes;
 
-        setAutoBucketAmount(bucketVal.toFixed(2));
+        setBucketAmount(bucketVal.toFixed(2));
 
     }, [amount, accountId, bucketId, accounts, buckets, rates]);
 
@@ -96,7 +106,19 @@ export default function TransactionModal({
                 parseInt(accountId),
                 bucketId ? parseInt(bucketId) : null,
                 description,
-                autoBucketAmount ? parseFloat(autoBucketAmount) : undefined
+                bucketAmount ? parseFloat(bucketAmount) : undefined,
+                date ? (() => {
+                    const [y, m, d] = date.split('-').map(Number);
+                    const [hours, minutes] = time.split(':').map(Number);
+                    const now = new Date();
+                    now.setFullYear(y);
+                    now.setMonth(m - 1);
+                    now.setDate(d);
+                    now.setHours(hours || 0);
+                    now.setMinutes(minutes || 0);
+                    now.setSeconds(0);
+                    return now.toISOString();
+                })() : undefined
             );
             onClose();
         } catch (error) {
@@ -118,6 +140,28 @@ export default function TransactionModal({
             title={type === 'INCOME' ? 'Registrar Ingreso' : 'Registrar Gasto'}
         >
             <div className="space-y-4">
+                {/* Date & Time Picker (Row) */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Fecha</label>
+                        <DatePicker 
+                            id="transaction-date"
+                            value={date}
+                            onChange={setDate}
+                            placeholder="Fecha"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Hora</label>
+                        <input 
+                            type="time" 
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
+                            className="w-full input-modern p-3 rounded-xl text-white bg-slate-800 border border-slate-700 focus:border-indigo-500 [color-scheme:dark]"
+                        />
+                    </div>
+                </div>
+
                 {/* Account Selection */}
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cuenta</label>
@@ -161,9 +205,25 @@ export default function TransactionModal({
                             </button>
                         )}
                     </div>
-                    {autoBucketAmount && (
-                        <div className="mt-2 text-xs text-indigo-300 bg-indigo-500/10 p-2 rounded-lg border border-indigo-500/20">
-                            Se usaran {getCurrencySymbol(buckets.find(b => String(b.id) === bucketId)?.currency || 'USD')} {formatNumberWithLocale(parseFloat(autoBucketAmount))} del bucket.
+                    {/* Cross Currency Input */}
+                    {accountId && bucketId && accounts.find(a => String(a.id) === accountId)?.currency !== buckets.find(b => String(b.id) === bucketId)?.currency && (
+                        <div className="animate-fade-in relative bg-slate-800/50 p-3 rounded-xl border border-dashed border-slate-700/50">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                Monto en {buckets.find(b => String(b.id) === bucketId)?.currency || 'Bucket'} (Deducción)
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 font-bold text-sm">
+                                    {getCurrencySymbol(buckets.find(b => String(b.id) === bucketId)?.currency || 'USD')}
+                                </span>
+                                <input
+                                    type="number"
+                                    value={bucketAmount}
+                                    onChange={(e) => setBucketAmount(e.target.value)}
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg py-2 pl-8 pr-3 font-mono text-white focus:border-indigo-500 outline-none text-right"
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
@@ -173,7 +233,7 @@ export default function TransactionModal({
                     <div className="flex justify-between mb-1 ml-1">
                         <label className="block text-xs font-bold text-slate-500 uppercase">Descripción</label>
                         <div className="flex gap-2">
-                            {['Comida', 'Pasaje', 'Cashea', 'Servicios', 'Ocio'].map(tag => (
+                            {['Comida', 'Pasaje', 'Cashea', 'Ruta', 'Vamos'].map(tag => (
                                 <button
                                     key={tag}
                                     onClick={() => setDescription(tag)}
@@ -212,7 +272,7 @@ export default function TransactionModal({
 
                 <button
                     onClick={handleSubmit}
-                    disabled={!amount || !accountId || !description.trim() || loading}
+                    disabled={!amount || !accountId || !description.trim() || !date || loading}
                     className={`w-full font-bold py-4 rounded-2xl shadow-lg transition transform active:scale-95 disabled:opacity-50 ${type === 'INCOME'
                         ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20 text-white'
                         : 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/20 text-white'

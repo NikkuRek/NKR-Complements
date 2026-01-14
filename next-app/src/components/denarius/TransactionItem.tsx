@@ -3,8 +3,6 @@
 import { Transaction, Account } from '@/types/denarius';
 import { format } from 'date-fns';
 import {
-    CalendarIcon,
-    ArchiveBoxIcon,
     TrashIcon,
     PencilIcon,
     ArrowDownIcon,
@@ -130,9 +128,8 @@ export default function TransactionItem({
             ref={containerRef}
             onClick={handleContainerClick}
         >
-            {/* Delete Background Layer */}
             {/* Actions Background Layer */}
-            <div className="absolute inset-y-0 right-0 w-full rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-end px-4 gap-3 mb-3">
+            <div className="absolute inset-y-0 right-0 w-full rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-end px-4 gap-3 mb-2">
                 {onEdit && (
                     <button
                         onClick={(e) => {
@@ -161,52 +158,58 @@ export default function TransactionItem({
 
             {/* Draggable Content */}
             <motion.div
-                className="group relative overflow-hidden rounded-2xl glass-panel p-4 border border-white/5 shadow-lg mb-3"
-                style={{ backgroundColor: '#1e293b' }} // Ensure opacity blocks background
+                className="group relative overflow-hidden rounded-2xl glass-panel p-3 border border-white/5 shadow-md mb-2"
+                style={{ backgroundColor: '#1e293b' }}
                 drag="x"
                 dragConstraints={{ left: -140, right: 0 }}
                 onDragEnd={handleDragEnd}
                 animate={controls}
                 whileTap={{ cursor: "grabbing" }}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.2 }}
             >
                 {/* Gradient Background */}
-                <div className={`absolute inset-0 bg-gradient-to-r ${style.gradient} opacity-40`} />
+                <div className={`absolute inset-0 bg-gradient-to-r ${style.gradient} opacity-20`} />
 
-                <div className="relative z-10 flex items-center gap-4">
+                <div className="relative z-10 flex items-center gap-3">
                     {/* Icon Box */}
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${style.bg} ${style.color} shadow-inner bg-opacity-50 backdrop-blur-md border ${style.border}`}>
-                        <Icon className="w-6 h-6" />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${style.bg} ${style.color} shadow-inner bg-opacity-50 backdrop-blur-md border ${style.border}`}>
+                        <Icon className="w-5 h-5" />
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-3">
-                            <h4 className="font-bold text-white truncate text-[11px] leading-tight flex-1 min-w-0" title={tx.description}>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <div className="flex justify-between items-start">
+                            <h4 className="font-bold text-white truncate text-xs leading-tight pr-2" title={tx.description}>
                                 {tx.description}
                             </h4>
-                            <span className={`font-mono font-bold text-[11px] ${style.color} whitespace-nowrap flex-shrink-0`}>
+                            <div className={`text-xs font-mono font-bold px-2 py-1.5 justify-center items-center rounded-md transition-all duration-300 ${isExpense ? 'text-rose-300 bg-rose-500/10 border-rose-500/20' : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'} bg-black/30 border backdrop-blur-sm`}>
                                 {isExpense ? '-' : (isBucketMove ? '' : '+')}{getCurrencySymbol(displayCurrency)}{formatNumberWithLocale(displayAmount)}
-                            </span>
+                            </div>
                         </div>
 
-                        <div className="mt-1.5 space-y-1">
-                            <div className="flex items-center text-[9px] text-slate-400 font-medium">
-                                <CalendarIcon className="w-3 h-3 mr-1 opacity-70" />
-                                {format(new Date(tx.date), 'dd MMM, HH:mm')}
+                        {/* Secondary Amount line */}
+                        {tx.target_amount && tx.bucket_id && tx.account_id && Number(tx.target_amount) !== Number(tx.amount) && (
+                            <div className="text-[9px] text-slate-500 font-mono text-right -mt-0.5 mb-0.5">
+                                ({getCurrencySymbol(bucket?.currency || 'USD')}{formatNumberWithLocale(Number(tx.target_amount))})
                             </div>
+                        )}
 
-                            <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-slate-500 font-medium">
+                                {format(new Date(tx.date), 'HH:mm')}
+                            </span>
+
+                            {/* Unified Badge Row */}
+                            <div className="flex items-center gap-1.5 overflow-hidden">
                                 {(bucket || sourceBucket) && (
-                                    <span className="flex items-center text-[9px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
-                                        <ArchiveBoxIcon className="w-3 h-3 mr-1" />
+                                    <span className="flex items-center text-[9px] text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 truncate max-w-[120px]">
                                         {sourceBucket ? (
                                             <>
                                                 {sourceBucket.name}
-                                                <span className="mx-1 opacity-50">&rarr;</span>
+                                                <span className="mx-0.5 opacity-50">&rarr;</span>
                                                 {bucket ? bucket.name : '?'}
                                             </>
                                         ) : (
@@ -215,16 +218,14 @@ export default function TransactionItem({
                                     </span>
                                 )}
 
-                                <span className="text-[9px] px-1.5 py-0.5 bg-slate-800/50 rounded text-slate-500 font-mono border border-white/5">
+                                <span className="text-[9px] px-1.5 py-0.5 bg-slate-800/50 rounded text-slate-500 border border-white/5 truncate">
                                     {formatType(tx.type)}
                                 </span>
                             </div>
                         </div>
                     </div>
-
-
                 </div>
-            </motion.div>
-        </div>
+            </motion.div >
+        </div >
     );
 }

@@ -28,6 +28,13 @@ router.post('/migrate', async (req, res) => {
             }
         }
 
+        // Explicitly check for target_amount column in transactions (since Create Table IF NOT EXISTS won't add it)
+        const [columns] = await connection.query("SHOW COLUMNS FROM transactions LIKE 'target_amount'");
+        if (columns.length === 0) {
+            console.log('Adding target_amount column via migration...');
+            await connection.query('ALTER TABLE transactions ADD COLUMN target_amount DECIMAL(15, 2) DEFAULT NULL');
+        }
+
         res.json({
             success: true,
             message: 'Database migration completed successfully!'

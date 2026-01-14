@@ -3,21 +3,20 @@
 import { useState } from 'react';
 import { Transaction, Account } from '@/types/denarius';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
     MagnifyingGlassIcon,
     FunnelIcon,
-    ArchiveBoxIcon,
     ArrowDownIcon,
     ArrowUpIcon,
     ArrowsRightLeftIcon,
-    TrashIcon,
-    CalendarIcon,
     BanknotesIcon
 } from '@heroicons/react/24/outline';
-import { formatNumberWithLocale, getCurrencySymbol } from '@/lib/currency';
+import { formatNumberWithLocale } from '@/lib/currency';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import AccountModal from '@/components/ui/AccountModal';
 import DatePicker from '@/components/ui/DatePicker';
+import TransactionItem from './TransactionItem';
 
 interface TransactionsViewProps {
     transactions: Transaction[];
@@ -26,8 +25,6 @@ interface TransactionsViewProps {
     onDeleteTransaction: (id: string) => Promise<void>;
     onUpdateTransaction?: (id: string, values: Partial<Transaction>) => Promise<void>;
 }
-
-import TransactionItem from './TransactionItem';
 
 export default function TransactionsView({
     transactions,
@@ -50,11 +47,12 @@ export default function TransactionsView({
 
     // Edit State
     const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editData, setEditData] = useState<Partial<Transaction> & { id: string }>({
+    const [editData, setEditData] = useState<Partial<Transaction> & { id: string, time?: string }>({
         id: '',
         amount: 0,
         description: '',
-        date: ''
+        date: '',
+        time: ''
     });
     const [loading, setLoading] = useState(false);
 
@@ -159,34 +157,6 @@ export default function TransactionsView({
         return true;
     });
 
-    const getTransactionStyle = (type: string) => {
-        if (type.includes('INCOME') || type.includes('TRANSFER_IN')) {
-            return {
-                icon: ArrowDownIcon,
-                color: 'text-emerald-400',
-                bg: 'bg-emerald-500/10',
-                border: 'border-emerald-500/20',
-                gradient: 'from-emerald-900/10 to-transparent'
-            };
-        }
-        if (type.includes('EXPENSE') || type.includes('TRANSFER_OUT')) {
-            return {
-                icon: ArrowUpIcon,
-                color: 'text-rose-400',
-                bg: 'bg-rose-500/10',
-                border: 'border-rose-500/20',
-                gradient: 'from-rose-900/10 to-transparent'
-            };
-        }
-        return {
-            icon: ArrowsRightLeftIcon,
-            color: 'text-blue-400',
-            bg: 'bg-blue-500/10',
-            border: 'border-blue-500/20',
-            gradient: 'from-blue-900/10 to-transparent'
-        };
-    };
-
     const formatType = (type: string) => {
         const map: Record<string, string> = {
             'INCOME': 'Ingreso',
@@ -202,11 +172,24 @@ export default function TransactionsView({
     };
 
     const handleEditClick = (tx: Transaction) => {
+        const txDate = new Date(tx.date);
+        let timeStr = '00:00';
+        try {
+             // Try to extract time from ISO string if present
+             const parts = txDate.toISOString().split('T');
+             if (parts.length > 1) {
+                 timeStr = parts[1].substring(0, 5);
+             }
+        } catch (e) {
+            console.error(e);
+        }
+
         setEditData({
             id: tx.id,
             amount: Number(tx.amount),
             description: tx.description,
-            date: new Date(tx.date).toISOString().split('T')[0] // Format for input date
+            date: txDate.toISOString().split('T')[0], // Format for input date YYYY-MM-DD
+            time: timeStr
         });
         setEditModalOpen(true);
     };
@@ -215,10 +198,24 @@ export default function TransactionsView({
         if (!onUpdateTransaction || !editData.id) return;
         setLoading(true);
         try {
+            let finalDateStr = undefined;
+            if (editData.date) {
+                const [y, m, d] = editData.date.toString().split('-').map(Number);
+                const [hours, minutes] = (editData.time || '00:00').split(':').map(Number);
+                const finalDate = new Date();
+                finalDate.setFullYear(y);
+                finalDate.setMonth(m - 1);
+                finalDate.setDate(d);
+                finalDate.setHours(hours || 0);
+                finalDate.setMinutes(minutes || 0);
+                finalDate.setSeconds(0);
+                finalDateStr = finalDate.toISOString();
+            }
+
             await onUpdateTransaction(editData.id, {
                 amount: editData.amount,
                 description: editData.description,
-                date: editData.date ? new Date(editData.date).toISOString() : undefined
+                date: finalDateStr
             });
             setEditModalOpen(false);
         } catch (error) {
@@ -262,7 +259,7 @@ export default function TransactionsView({
     return (
         <div className="animate-fade-in space-y-4">
             {/* Header */}
-            <div className="flex items-center justify-between px-2">
+            <div className="flex items-center justify-between p-2 border-b border-blue-500/20">
                 <h3 className="text-xl font-bold text-white">Historial</h3>
                 <div className="flex items-center gap-2">
                     <div className="flex gap-2">
@@ -427,7 +424,7 @@ export default function TransactionsView({
             )}
 
             {/* Transactions List */}
-            <div className="space-y-3 pb-24">
+            <div className="space-y-6 pb-24">
                 {filteredTransactions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">
                         <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center mb-4">
@@ -437,17 +434,80 @@ export default function TransactionsView({
                         <p className="text-xs text-slate-500 mt-1">Ajusta los filtros o crea un movimiento</p>
                     </div>
                 ) : (
-                    filteredTransactions.map((tx, index) => (
-                        <TransactionItem
-                            key={tx.id}
-                            tx={tx}
-                            buckets={buckets}
-                            accounts={accounts}
-                            onDelete={handleDeleteClick}
-                            onEdit={handleEditClick}
-                            index={index}
-                        />
-                    ))
+                    Object.entries(
+                        filteredTransactions.reduce((groups, tx) => {
+                            // Convert UTC timestamp to Local Date String (YYYY-MM-DD) for grouping
+                            // This ensures that 9PM on the 12th stays on the 12th, doesn't jump to 13th (UTC)
+                            const dateObj = new Date(tx.date);
+                            // Subtract timezone offset to get "Local ISO"
+                            const localIso = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString();
+                            const dateKey = localIso.split('T')[0];
+                            
+                            if (!groups[dateKey]) {
+                                groups[dateKey] = [];
+                            }
+                            groups[dateKey].push(tx);
+                            return groups;
+                        }, {} as Record<string, Transaction[]>)
+                    )
+                        .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+                        .map(([date, txs]) => {
+                            // Date header logic
+                            const [year, month, day] = date.split('-').map(Number);
+                            const dateObj = new Date(year, month - 1, day); 
+
+                            const today = new Date();
+                            const yesterday = new Date();
+                            yesterday.setDate(yesterday.getDate() - 1);
+
+                            let headerText = format(dateObj, "EEEE, d 'de' MMMM", { locale: es });
+                            headerText = headerText.charAt(0).toUpperCase() + headerText.slice(1);
+
+                            if (dateObj.toDateString() === today.toDateString()) {
+                                headerText = 'Hoy';
+                            } else if (dateObj.toDateString() === yesterday.toDateString()) {
+                                headerText = 'Ayer';
+                            }
+
+                            // Calculate daily total
+                            const dailyTotal = txs.reduce((sum, tx) => {
+                                const amount = Number(tx.amount);
+                                if (tx.type.includes('INCOME') || tx.type.includes('TRANSFER_IN')) return sum + amount;
+                                return sum - amount;
+                            }, 0);
+
+                            return (
+                                <div key={date} className="space-y-2">
+                                    {/* Header */}
+                                    <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full transition-all duration-300 shadow-[0_0_10px_var(--glow-color,transparent)] ${dailyTotal >= 0 ? 'bg-emerald-400 [--glow-color:theme(colors.emerald.500/0.3)]' : 'bg-rose-400 [--glow-color:theme(colors.rose.500/0.3)]'}`} />
+                                            <h3 className="text-sm text-slate-200 capitalize tracking-wide drop-shadow-md font-bold">
+                                            {headerText}
+                                            </h3>
+                                        </div>
+                                        <span className={`text-xs font-mono font-bold px-3 py-1.5 rounded-md transition-all duration-300 ${dailyTotal >= 0 ? 'text-emerald-300 underline' : 'text-rose-300 underline'}`}>
+                                            {dailyTotal > 0 ? '+' : dailyTotal < 0 ? '' : ''}{formatNumberWithLocale(dailyTotal)}
+                                        </span>
+                                    </div>
+
+                                    {/* Transactions */}
+                                    <div className="space-y-3 px-2">
+                                        {txs.map((tx, index) => (
+                                            <TransactionItem
+                                                key={tx.id}
+                                                tx={tx}
+                                                buckets={buckets}
+                                                accounts={accounts}
+                                                onDelete={handleDeleteClick}
+                                                onEdit={handleEditClick}
+                                                index={index}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })
                 )}
             </div>
 
@@ -468,24 +528,34 @@ export default function TransactionsView({
                             className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500"
                         />
                     </div>
-                    <div className="flex gap-3">
-                        <div className="w-1/2">
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Monto</label>
-                            <input
-                                type="number"
-                                value={editData.amount}
-                                onChange={(e) => setEditData({ ...editData, amount: parseFloat(e.target.value) })}
-                                placeholder="0.00"
-                                step="0.01"
-                                className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500"
-                            />
-                        </div>
-                        <div className="w-1/2">
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Monto</label>
+                        <input
+                            type="number"
+                            value={editData.amount}
+                            onChange={(e) => setEditData({ ...editData, amount: parseFloat(e.target.value) })}
+                            placeholder="0.00"
+                            step="0.01"
+                            className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500"
+                        />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
                             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Fecha</label>
                             <input
                                 type="date"
                                 value={editData.date ? String(editData.date) : ''}
                                 onChange={(e) => setEditData({ ...editData, date: e.target.value })}
+                                className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500 [color-scheme:dark]"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Hora</label>
+                            <input
+                                type="time"
+                                value={editData.time || ''}
+                                onChange={(e) => setEditData({ ...editData, time: e.target.value })}
                                 className="w-full input-modern p-4 rounded-xl text-white placeholder-slate-500 [color-scheme:dark]"
                             />
                         </div>
@@ -500,7 +570,6 @@ export default function TransactionsView({
                     </button>
                 </div>
             </AccountModal>
-
 
             <ConfirmModal
                 isOpen={!!deletingId}

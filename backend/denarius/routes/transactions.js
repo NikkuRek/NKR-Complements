@@ -33,6 +33,8 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const connection = await pool.getConnection();
   try {
+    console.log('--- START TRANSACTION POST ---');
+    console.log('Body:', req.body);
     await connection.beginTransaction();
     const { date, amount, type, account_id, bucket_id, source_bucket_id, description, target_amount } = req.body;
     const tx_date = date ? new Date(date) : new Date();
@@ -41,56 +43,51 @@ router.post('/', async (req, res) => {
     // If target_amount is provided (e.g. for cross-currency bucket moves), use it for the 'receiving' side.
     // Otherwise fallback to 'amount'.
     const finalTargetAmount = (target_amount !== undefined && target_amount !== null) ? target_amount : amount;
+    console.log('Calculated amounts:', { amount, finalTargetAmount });
 
-    // Special Handling for Cross-Currency Bucket Moves
+    // Special Handling for Bucket Moves (Movement between budgets)
+    // ALWAYS Split into 2 Separate Transactions: TRANSFER_OUT and TRANSFER_IN
     if (type === 'bucket_move' && source_bucket_id && bucket_id) {
-      console.log('Processing bucket_move:', { source_bucket_id, bucket_id, amount, target_amount });
+      console.log('Processing bucket_move as Dual Transaction:', { source_bucket_id, bucket_id, amount, target_amount });
 
       const [buckets] = await connection.query('SELECT id, currency, name FROM buckets WHERE id IN (?, ?)', [source_bucket_id, bucket_id]);
       const sourceB = buckets.find(b => String(b.id) === String(source_bucket_id));
       const targetB = buckets.find(b => String(b.id) === String(bucket_id));
 
       if (sourceB && targetB) {
-        console.log('Buckets found:', {
-          source: { id: sourceB.id, currency: sourceB.currency },
-          target: { id: targetB.id, currency: targetB.currency }
-        });
+        // 1. Outgoing from Source
+        const descriptionOut = description || `Transferencia a ${targetB.name}`;
+        await connection.query(
+          'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
+          [tx_date, amount, 'TRANSFER_OUT', source_bucket_id, descriptionOut]
+        );
+        await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
 
-        if (sourceB.currency.trim() !== targetB.currency.trim()) {
-          console.log('Splitting cross-currency transfer');
+        // 2. Incoming to Target
+        const descriptionIn = description || `Transferencia desde ${sourceB.name}`;
+        await connection.query(
+          'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
+          [tx_date, finalTargetAmount, 'TRANSFER_IN', bucket_id, descriptionIn]
+        );
+        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
 
-          // Create 2 Separate Transactions
-
-          // 1. Outgoing from Source
-          const descriptionOut = description || `Transferencia a ${targetB.name}`;
-          await connection.query(
-            'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
-            [tx_date, amount, 'TRANSFER_OUT', source_bucket_id, descriptionOut]
-          );
-          await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
-
-          // 2. Incoming to Target
-          const descriptionIn = description || `Transferencia desde ${sourceB.name}`;
-          await connection.query(
-            'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
-            [tx_date, finalTargetAmount, 'TRANSFER_IN', bucket_id, descriptionIn]
-          );
-          await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
-
-          await connection.commit();
-          return res.status(201).json({ message: 'Transferencia multimoneda realizada' });
-        }
+        await connection.commit();
+        console.log('Bucket move committed successfully');
+        return res.status(201).json({ message: 'Transferencia realizada con éxito (Salida y Entrada creadas)' });
       }
     }
 
+    console.log('Inserting main transaction...');
     const [result] = await connection.query(
-      'INSERT INTO transactions (date, amount, type, account_id, bucket_id, source_bucket_id, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [tx_date, amount, type, account_id, bucket_id, source_bucket_id, description]
+      'INSERT INTO transactions (date, amount, type, account_id, bucket_id, source_bucket_id, description, target_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [tx_date, amount, type, account_id, bucket_id, source_bucket_id, description, finalTargetAmount]
     );
+    console.log('Insert result:', result);
 
     const lowerCaseType = type.toLowerCase();
 
     if (account_id) {
+      console.log('Updating account balance...', { account_id, type: lowerCaseType });
       if (lowerCaseType === 'income' || lowerCaseType === 'transfer_in') {
         await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, account_id]);
       } else if (lowerCaseType === 'expense' || lowerCaseType === 'transfer_out') {
@@ -99,12 +96,10 @@ router.post('/', async (req, res) => {
     }
 
     if (bucket_id) {
+      console.log('Updating bucket balance...', { bucket_id, type: lowerCaseType, finalTargetAmount });
       if (lowerCaseType === 'income' || lowerCaseType === 'transfer_in') {
         // Income to bucket: Generally matches source amount if same currency, or target_amount if different. 
         // Let's assume income into bucket uses finalTargetAmount too if provided (e.g. Income in VES -> Bucket in USD).
-        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
-      } else if (lowerCaseType === 'bucket_move') {
-        // Use finalTargetAmount for the receiving bucket
         await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
       } else if (lowerCaseType === 'expense' || lowerCaseType === 'transfer_out') {
         // Expense from bucket: Use finalTargetAmount (converted value) if provided, else amount
@@ -112,18 +107,25 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Note: 'bucket_move' logic here is technically unreachable now if correct params provided, 
+    // but kept as fallback or for partial data (e.g. missing source/target).
     if (source_bucket_id && lowerCaseType === 'bucket_move') {
-      // Always remove 'amount' from source
       await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
+      if (bucket_id) {
+        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+      }
     }
 
     await connection.commit();
+    console.log('Transaction committed successfully:', result.insertId);
     res.status(201).json({ message: 'Transacción guardada', id: result.insertId });
   } catch (error) {
     await connection.rollback();
+    console.error('TRANSACTION ERROR - ROLLBACK EXECUTED:', error);
     res.status(500).json({ error: error.message });
   } finally {
     connection.release();
+    console.log('--- END TRANSACTION POST ---');
   }
 });
 
@@ -242,10 +244,13 @@ router.delete('/:tx_id', async (req, res) => {
     }
 
     if (tx.bucket_id) {
+      // Use target_amount for bucket updates if available (for cross-currency)
+      const bucketAmount = (tx.target_amount !== null && tx.target_amount !== undefined) ? tx.target_amount : tx.amount;
+
       if (oldType === 'income' || oldType === 'bucket_move' || oldType === 'transfer_in') {
-        await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [tx.amount, tx.bucket_id]);
+        await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [bucketAmount, tx.bucket_id]);
       } else if (oldType === 'expense' || oldType === 'transfer_out') {
-        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [tx.amount, tx.bucket_id]);
+        await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [bucketAmount, tx.bucket_id]);
       }
     }
 

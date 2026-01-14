@@ -38,7 +38,8 @@ interface AccountsViewProps {
         accountId: number | null,
         bucketId: number | null,
         description: string,
-        targetAmount?: number
+        targetAmount?: number,
+        date?: string
     ) => Promise<void>;
 
     rates?: {
@@ -325,9 +326,9 @@ export default function AccountsView({
     };
 
     // Handle Save Transaction
-    const handleSaveTransaction = async (amount: number, accountId: number, bucketId: number | null, description: string) => {
+    const handleSaveTransaction = async (amount: number, accountId: number, bucketId: number | null, description: string, targetAmount?: number, date?: string) => {
         if (!onAddTransaction) return;
-        await onAddTransaction(amount, transactionType, accountId, bucketId, description);
+        await onAddTransaction(amount, transactionType, accountId, bucketId, description, targetAmount, date);
     };
 
     // Calculate default rate when transfer details change
@@ -496,7 +497,8 @@ export default function AccountsView({
                 // 1. Expense from Asset (Source) - Real money leaving bank (Source Amount)
                 const descSource = `${description}`;
                 console.log('Tx 1 (Source Bank):', { amount, type: 'EXPENSE', accountId: sourceAccountId, desc: descSource });
-                await onAddTransaction(amount, 'EXPENSE', sourceAccountId, null, descSource);
+                // Link to General Bucket (ID: 1)
+                await onAddTransaction(amount, 'EXPENSE', sourceAccountId, 1, descSource);
 
                 // 2. Expense from Liability (Target) - Adjustment to reduce debt balance (Target Amount)
                 const descTarget = `Ajuste de Deuda (Pago Realizado)`;
@@ -512,7 +514,8 @@ export default function AccountsView({
                 // 2. Income to Asset (Source - where money lands) (Source Amount)
                 const descSource = `${description}`;
                 console.log('Tx 2 (Source Bank):', { amount, type: 'INCOME', accountId: sourceAccountId, desc: descSource });
-                await onAddTransaction(amount, 'INCOME', sourceAccountId, null, descSource);
+                // Link to General Bucket (ID: 1)
+                await onAddTransaction(amount, 'INCOME', sourceAccountId, 1, descSource);
             }
             setSettleModalOpen(false);
             setSettlingAccount(null);

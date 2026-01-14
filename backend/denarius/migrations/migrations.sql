@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   bucket_id INT,
   source_bucket_id INT,
   description VARCHAR(255),
+  target_amount DECIMAL(15, 2) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
   FOREIGN KEY (bucket_id) REFERENCES buckets(id) ON DELETE SET NULL

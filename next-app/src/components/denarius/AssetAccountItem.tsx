@@ -57,7 +57,7 @@ export default function AssetAccountItem({ account, onDelete, onEdit, getTransac
         if (account.type !== 'ASSET') return;
         setLoading(true);
         try {
-            const fetchedTransactions = await getTransactions(account.id, 5);
+            const fetchedTransactions = await getTransactions(account.id, 10);
             setTransactions(fetchedTransactions);
         } catch (error) {
             console.error("Failed to fetch transactions", error);
@@ -130,7 +130,7 @@ export default function AssetAccountItem({ account, onDelete, onEdit, getTransac
                             {transactions.map(tx => (
                                 <div key={tx.id} className="flex justify-between items-center text-slate-300">
                                     <div className='flex items-center gap-2'>
-                                        <span className="text-slate-500 text-xs">{new Date(tx.date).toLocaleDateString()}</span>
+                                        <span className="text-slate-500 text-xs">{new Date(tx.date).toLocaleDateString('es-VE', { timeZone: 'UTC' })}</span>
                                         <p>{tx.description}</p>
                                     </div>
                                     <span className={`${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-rose-400'}`}>
