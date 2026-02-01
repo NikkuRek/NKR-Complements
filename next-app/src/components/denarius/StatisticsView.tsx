@@ -33,19 +33,11 @@ export default function StatisticsView({ transactions, accounts, buckets, apiKey
     }, [messages]);
 
     const generateAnalysis = async () => {
-        if (!apiKey) {
-            setError('API Key no configurada');
-            return;
-        }
-
         setLoading(true);
         setError(null);
         setMessages([]); // Clear previous chat
 
         try {
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
             // Prepare summary data
             const recentTransactions = transactions.slice(0, 50).map(t => ({
                 date: t.date,
@@ -129,22 +121,30 @@ export default function StatisticsView({ transactions, accounts, buckets, apiKey
                 **Nota:** Utiliza negritas para resaltar cifras importantes. Sé directo pero amigable. No uses LaTeX, usa formato de texto estándar para monedas ($).
             `;
 
-            const chat = model.startChat({
-                history: [
-                    {
-                        role: "user",
-                        parts: [{ text: "Hola Denarius, analiza mis finanzas actuales por favor." }],
-                    },
-                ],
+            // Initial messages state setup before call
+            const initialHistory: ChatMessage[] = [
+                 { role: 'user', text: "Hola Denarius, analiza mis finanzas actuales por favor." }
+            ];
+
+            const response = await fetch('/api/denarius/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    // No history yet for first call, but we simulate structure
+                    history: [] 
+                })
             });
 
-            setChatSession(chat);
+            if (!response.ok) {
+                 const errData = await response.json();
+                 throw new Error(errData.error || 'Error del servidor AI');
+            }
 
-            const result = await chat.sendMessage(prompt);
-            const response = await result.response;
-            const text = response.text();
-
-            setMessages([{ role: 'model', text }]);
+            const data = await response.json();
+            
+            // Set messages with server response (implicitly acknowledging user implicit prompt)
+            setMessages([{ role: 'model', text: data.text }]);
 
         } catch (err: any) {
             console.error(err);
@@ -156,18 +156,42 @@ export default function StatisticsView({ transactions, accounts, buckets, apiKey
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!inputValue.trim() || !chatSession) return;
+        if (!inputValue.trim()) return;
 
         const userMsg = inputValue.trim();
         setInputValue('');
-        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+        
+        // Optimistic UI update
+        const newHistory: ChatMessage[] = [...messages, { role: 'user', text: userMsg }];
+        setMessages(newHistory);
         setLoading(true);
 
         try {
-            const result = await chatSession.sendMessage(userMsg);
-            const response = await result.response;
-            const text = response.text();
-            setMessages(prev => [...prev, { role: 'model', text }]);
+            // Map current messages to Gemini history format
+            // Gemini expects: { role: 'user' | 'model', parts: [{ text: string }] }
+            // Our state is: { role: 'user' | 'model', text: string }
+            const apiHistory = messages.map(m => ({
+                role: m.role,
+                parts: [{ text: m.text }]
+            }));
+
+            const response = await fetch('/api/denarius/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: userMsg,
+                    history: apiHistory
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Error del servidor AI');
+            }
+
+            const data = await response.json();
+            setMessages(prev => [...prev, { role: 'model', text: data.text }]);
+            
         } catch (err: any) {
             console.error(err);
             setMessages(prev => [...prev, { role: 'model', text: 'Error: No pude procesar tu mensaje. Intenta de nuevo.' }]);

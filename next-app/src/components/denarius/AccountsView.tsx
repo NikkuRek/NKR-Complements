@@ -204,6 +204,58 @@ export default function AccountsView({
                 data.startDate || null,
                 data.dueDate || null
             );
+
+            // AUTO-TRANSACTION LOGIC
+            const initAmount = parseFloat(data.init);
+            if ((type === 'RECEIVABLE' || type === 'LIABILITY') && initAmount > 0) {
+                const bankAccount = accounts.find(a => String(a.id) === '1');
+                
+                if (bankAccount && onAddTransaction) {
+                    // Calculate Amount in Bank Currency
+                    let finalAmount = initAmount;
+                    
+                    if (data.currency !== bankAccount.currency) {
+                        const getRate = (curr: Currency) => {
+                            if (curr === 'USD') return rates.USD;
+                            if (curr === 'USDT') return rates.USDT;
+                            return 1; // VES or 1:1 fallback
+                        };
+                        
+                        // Convert Source to VES
+                        let valInVes = initAmount;
+                        if (data.currency !== 'VES') {
+                            valInVes = initAmount * getRate(data.currency);
+                        }
+
+                        // Convert VES to Target (Bank)
+                        if (bankAccount.currency === 'VES') {
+                            finalAmount = valInVes;
+                        } else {
+                            finalAmount = valInVes / getRate(bankAccount.currency);
+                        }
+                    }
+
+                    const isReceivable = type === 'RECEIVABLE';
+                    const txType = isReceivable ? 'EXPENSE' : 'INCOME';
+                    const actionText = isReceivable ? 'Gasto' : 'Ingreso';
+                    const desc = isReceivable ? `Préstamo otorgado: ${data.name}` : `Préstamo recibido: ${data.name}`;
+
+                    // Small timeout to allow UI to update or just feel natural
+                    setTimeout(async () => {
+                         if (window.confirm(`¿Desea registrar automáticamente el ${actionText} en la Cuenta Principal (ID 1)?\n\nMonto: ${bankAccount.currency} ${formatNumberWithLocale(finalAmount)}`)) {
+                            // Using ID 1 for Account and Bucket as requested
+                            await onAddTransaction(
+                                finalAmount,
+                                txType,
+                                1, 
+                                1, 
+                                desc
+                            );
+                        }
+                    }, 100);
+                }
+            }
+
             // Reset form
             setNewAccountData(prev => ({
                 ...prev,

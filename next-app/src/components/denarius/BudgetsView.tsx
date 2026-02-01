@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Button from '@/components/ui/Button';
-import { PlusIcon, ArrowsRightLeftIcon, ArchiveBoxIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline'; // Added EyeIcon
+import { PlusIcon, ArrowsRightLeftIcon, ArchiveBoxIcon, PencilIcon, TrashIcon, EyeIcon, BoltIcon } from '@heroicons/react/24/outline'; // Added EyeIcon
 import { Bucket, Currency, Account } from '@/types/denarius';
 import AccountModal from '@/components/ui/AccountModal';
 import { getCurrencySymbol, formatNumberWithLocale } from '@/lib/currency';
@@ -55,6 +55,9 @@ export default function BudgetsView({
     const [editName, setEditName] = useState('');
     const [editBalance, setEditBalance] = useState('');
     const [editCurrency, setEditCurrency] = useState<Currency>('USD');
+
+    // Cover Deficit State
+    const [coverDeficitData, setCoverDeficitData] = useState<{ source: Bucket; target: Bucket; sAmount: number; tAmount: number } | null>(null);
 
     // Close menu on click outside
     useEffect(() => {
@@ -287,6 +290,61 @@ export default function BudgetsView({
         }
     };
 
+    const handleCoverDeficit = (targetBucket: Bucket) => {
+        const sourceBucket = buckets.find(b => String(b.id) === '1');
+        
+        if (!sourceBucket) {
+             alert('No se encontró el Bucket ID 1 (Principal) para cubrir el déficit.');
+             return;
+        }
+        
+        if (String(sourceBucket.id) === String(targetBucket.id)) return;
+
+        const deficit = Math.abs(Number(targetBucket.balance));
+        if (deficit === 0) return;
+
+        // Calculate source amount (conversion logic)
+        let sourceAmount = deficit;
+        
+        // Convert to shared base (VES)
+        let valInVes = deficit;
+        if (targetBucket.currency === 'USD') valInVes = deficit * rates.USD;
+        else if (targetBucket.currency === 'USDT') valInVes = deficit * rates.USDT;
+        // if VES, valInVes = deficit
+
+        // Convert base to source currency
+        if (sourceBucket.currency === 'USD') sourceAmount = valInVes / rates.USD;
+        else if (sourceBucket.currency === 'USDT') sourceAmount = valInVes / rates.USDT;
+        else sourceAmount = valInVes; // VES
+
+        setCoverDeficitData({
+            source: sourceBucket,
+            target: targetBucket,
+            sAmount: sourceAmount,
+            tAmount: deficit
+        });
+    };
+
+    const executeCoverDeficit = async () => {
+        if (!coverDeficitData || !onTransferBucket) return;
+        
+        setLoading(true);
+        try {
+            await onTransferBucket(
+                Number(coverDeficitData.source.id), 
+                Number(coverDeficitData.target.id), 
+                coverDeficitData.sAmount, 
+                coverDeficitData.tAmount
+            );
+        } catch (error) {
+            console.error(error);
+            alert('Error al realizar la transferencia automática');
+        } finally {
+            setLoading(false);
+            setCoverDeficitData(null);
+        }
+    };
+
     return (
         <div className="animate-fade-in space-y-6">
             {/* Header & Stats */}
@@ -416,15 +474,29 @@ export default function BudgetsView({
                                             <p className="text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
                                                 {display.symbol}{formatNumberWithLocale(display.value)}
                                             </p>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(bucket.id, bucket.name);
-                                                }}
-                                                className="w-6 h-6 rounded-full text-slate-600 hover:text-rose-400 transition"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                {Number(bucket.balance) < 0 && String(bucket.id) !== '1' && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleCoverDeficit(bucket);
+                                                        }}
+                                                        className="w-6 h-6 rounded-full text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 flex items-center justify-center transition"
+                                                        title="Cubrir Déficit con Bucket ID 1"
+                                                    >
+                                                        <BoltIcon className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(bucket.id, bucket.name);
+                                                    }}
+                                                    className="w-6 h-6 rounded-full text-slate-600 hover:text-rose-400 transition"
+                                                >
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -676,6 +748,18 @@ export default function BudgetsView({
                 title="Eliminar Presupuesto"
                 message={`¿Estás seguro de que quieres eliminar la categoría "${deletingName}"? Los fondos volverán a la cuenta principal.`}
                 confirmText="Sí, eliminar"
+            />
+
+            <ConfirmModal
+                isOpen={!!coverDeficitData}
+                onClose={() => setCoverDeficitData(null)}
+                onConfirm={executeCoverDeficit}
+                title="Cubrir Déficit"
+                message={coverDeficitData 
+                    ? `¿Deseas cubrir el déficit de "${coverDeficitData.target.name}"? Se transferirán ${getCurrencySymbol(coverDeficitData.source.currency)}${formatNumberWithLocale(coverDeficitData.sAmount)} desde "${coverDeficitData.source.name}".`
+                    : ''
+                }
+                confirmText="Confirmar Transferencia"
             />
         </div>
     );

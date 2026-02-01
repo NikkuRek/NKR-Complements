@@ -102,28 +102,14 @@ export default function TransactionsView({
         });
     };
 
-    // Apply filters
-    const filteredTransactions = transactions.filter((tx) => {
+    // 1. Base Filter (Search, Date, Bucket, Amount) - Everything EXCEPT Type
+    const baseTransactions = transactions.filter((tx) => {
         // Search filter
         if (
             filters.search &&
             !tx.description.toLowerCase().includes(filters.search.toLowerCase())
         )
             return false;
-
-        // Type filter
-        if (filters.type !== 'ALL') {
-            if (
-                filters.type === 'INCOME' &&
-                !(tx.type.includes('INCOME') || tx.type.includes('TRANSFER_IN'))
-            )
-                return false;
-            if (
-                filters.type === 'EXPENSE' &&
-                !(tx.type.includes('EXPENSE') || tx.type.includes('TRANSFER_OUT'))
-            )
-                return false;
-        }
 
         // Date range filter
         if (filters.startDate) {
@@ -148,12 +134,28 @@ export default function TransactionsView({
         // Bucket filter
         if (filters.bucket !== 'ALL' && tx.bucket_id?.toString() !== filters.bucket) return false;
 
-        // Hide purely internal adjustments from this main list to avoid "Visual Duplication" confusion for the user.
-        // These can still be seen if they check the specific Account balance, but for "Spending History", it looks like double spending.
+        // Hide purely internal adjustments
         if (tx.description.includes('Ajuste de Deuda') || tx.description.includes('Ajuste de Préstamo')) {
             return false;
         }
 
+        return true;
+    });
+
+    // 2. Type Filter (Applied on top for the list view)
+    const filteredTransactions = baseTransactions.filter((tx) => {
+        if (filters.type !== 'ALL') {
+            if (
+                filters.type === 'INCOME' &&
+                !(tx.type.includes('INCOME') || tx.type.includes('TRANSFER_IN'))
+            )
+                return false;
+            if (
+                filters.type === 'EXPENSE' &&
+                !(tx.type.includes('EXPENSE') || tx.type.includes('TRANSFER_OUT'))
+            )
+                return false;
+        }
         return true;
     });
 
@@ -235,7 +237,7 @@ export default function TransactionsView({
         setDeletingId(null);
     };
 
-    // Calculate total
+    // Calculate total (Visible transactions)
     const total = filteredTransactions.reduce((sum, tx) => {
         const amount = Number(tx.amount);
         if (tx.type.includes('INCOME') || tx.type.includes('TRANSFER_IN')) {
@@ -245,7 +247,8 @@ export default function TransactionsView({
         }
     }, 0);
 
-    const counts = filteredTransactions.reduce((acc, tx) => {
+    // Counts (Based on BASE transactions - ignoring type filter)
+    const counts = baseTransactions.reduce((acc, tx) => {
         if (tx.type.includes('TRANSFER') || tx.type === 'bucket_move') {
             acc.transfers++;
         } else if (tx.type.includes('INCOME')) {
@@ -256,6 +259,13 @@ export default function TransactionsView({
         return acc;
     }, { income: 0, expenses: 0, transfers: 0 });
 
+    const toggleTypeFilter = (filterType: 'INCOME' | 'EXPENSE') => {
+        setFilters(prev => ({
+            ...prev,
+            type: prev.type === filterType ? 'ALL' : filterType
+        }));
+    };
+
     return (
         <div className="animate-fade-in space-y-4">
             {/* Header */}
@@ -264,19 +274,28 @@ export default function TransactionsView({
                 <div className="flex items-center gap-2">
                     <div className="flex gap-2">
                         {counts.income > 0 && (
-                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">
+                            <button
+                                onClick={() => toggleTypeFilter('INCOME')}
+                                className={`text-xs font-bold px-2 py-1 rounded-lg transition hover:scale-105 active:scale-95 border ${filters.type === 'INCOME'
+                                    ? 'bg-emerald-500 text-white border-emerald-400'
+                                    : 'text-emerald-400 bg-emerald-500/10 border-transparent hover:bg-emerald-500/20'
+                                    }`}
+                                title="Filtrar Ingresos"
+                            >
                                 {counts.income}
-                            </span>
+                            </button>
                         )}
                         {counts.expenses > 0 && (
-                            <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">
+                            <button
+                                onClick={() => toggleTypeFilter('EXPENSE')}
+                                className={`text-xs font-bold px-2 py-1 rounded-lg transition hover:scale-105 active:scale-95 border ${filters.type === 'EXPENSE'
+                                    ? 'bg-rose-500 text-white border-rose-400'
+                                    : 'text-rose-400 bg-rose-500/10 border-transparent hover:bg-rose-500/20'
+                                    }`}
+                                title="Filtrar Gastos"
+                            >
                                 {counts.expenses}
-                            </span>
-                        )}
-                        {counts.transfers > 0 && (
-                            <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg">
-                                {counts.transfers}
-                            </span>
+                            </button>
                         )}
                     </div>
                     <button
