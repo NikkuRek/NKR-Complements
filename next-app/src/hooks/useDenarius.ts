@@ -230,6 +230,16 @@ export function useDenarius() {
         }
     };
 
+    const addBulkTransactions = async (transactions: any[]) => {
+        try {
+            await denariusApi.post('/transactions/bulk', transactions);
+            await fetchData();
+        } catch (error) {
+            console.error('Error adding bulk transactions:', error);
+            throw error;
+        }
+    };
+
     const updateTransaction = async (id: string, values: Partial<Transaction>) => {
         try {
             await denariusApi.put(`/transactions/${id}`, values);
@@ -406,6 +416,7 @@ export function useDenarius() {
         deleteBucket,
         transferBucket,
         addTransaction,
+        addBulkTransactions,
         updateTransaction,
         deleteTransaction,
         addWishlistItem,

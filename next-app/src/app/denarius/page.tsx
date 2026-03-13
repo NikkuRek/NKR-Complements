@@ -18,7 +18,6 @@ import {
     ChartBarIcon
 } from '@heroicons/react/24/outline';
 
-const GEMINI = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 const DOLAR_API_URL = process.env.NEXT_PUBLIC_DOLAR_API_URL || 'https://ve.dolarapi.com/v1/dolares';
 
 type View = 'accounts' | 'budgets' | 'transactions' | 'wishlist' | 'calculator' | 'statistics';
@@ -49,7 +48,6 @@ export default function DenariusPage() {
             setLoadingRates(prev => ({ ...prev, USD: false }));
         }
     };
-
     // Fetch USDT paralelo rate
     const fetchUsdtParalelo = async (silent: boolean = false) => {
         setLoadingRates(prev => ({ ...prev, USDT: true }));
@@ -171,6 +169,7 @@ export default function DenariusPage() {
                                     accounts={denarius.accounts}
                                     onDeleteTransaction={denarius.deleteTransaction}
                                     onUpdateTransaction={denarius.updateTransaction}
+                                    onAddBulkTransactions={denarius.addBulkTransactions}
                                 />
                             )}
                             {currentView === 'wishlist' && (
@@ -192,7 +191,6 @@ export default function DenariusPage() {
                                     transactions={denarius.transactions}
                                     accounts={denarius.accounts}
                                     buckets={denarius.buckets}
-                                    apiKey={GEMINI}
                                 />
                             )}
                         </>

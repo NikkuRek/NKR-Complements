@@ -1,0 +1,22 @@
+[
+  {
+    "date": "2026-03-12T00:00:00.000Z",
+    "amount": 150.00,
+    "type": "EXPENSE",
+    "account_id": 1,
+    "bucket_id": 5,
+    "source_bucket_id": null,
+    "description": "Compra de supermercado",
+    "target_amount": null
+  },
+  {
+    "date": "2026-03-13T10:30:00.000Z",
+    "amount": 500.00,
+    "type": "INCOME",
+    "account_id": 1,
+    "bucket_id": 2,
+    "source_bucket_id": null,
+    "description": "Pago quincena",
+    "target_amount": null
+  }
+]

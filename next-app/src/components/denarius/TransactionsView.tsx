@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Transaction, Account } from '@/types/denarius';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -10,7 +10,8 @@ import {
     ArrowDownIcon,
     ArrowUpIcon,
     ArrowsRightLeftIcon,
-    BanknotesIcon
+    BanknotesIcon,
+    DocumentArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { formatNumberWithLocale } from '@/lib/currency';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -24,6 +25,7 @@ interface TransactionsViewProps {
     accounts?: Account[];
     onDeleteTransaction: (id: string) => Promise<void>;
     onUpdateTransaction?: (id: string, values: Partial<Transaction>) => Promise<void>;
+    onAddBulkTransactions?: (transactions: any[]) => Promise<void>;
 }
 
 export default function TransactionsView({
@@ -31,7 +33,8 @@ export default function TransactionsView({
     buckets = [],
     accounts = [],
     onDeleteTransaction,
-    onUpdateTransaction
+    onUpdateTransaction,
+    onAddBulkTransactions
 }: TransactionsViewProps) {
     const [filters, setFilters] = useState({
         search: '',
@@ -55,6 +58,53 @@ export default function TransactionsView({
         time: ''
     });
     const [loading, setLoading] = useState(false);
+
+    // Bulk Upload State
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingBulk, setUploadingBulk] = useState(false);
+
+    const handleBulkUploadClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !onAddBulkTransactions) return;
+
+        setUploadingBulk(true);
+        try {
+            const fileReader = new FileReader();
+            fileReader.onload = async (event) => {
+                try {
+                    const content = event.target?.result;
+                    if (typeof content === 'string') {
+                        const jsonData = JSON.parse(content);
+                        if (!Array.isArray(jsonData)) {
+                            alert('El archivo JSON debe contener un arreglo (array) de transacciones.');
+                            return;
+                        }
+                        
+                        await onAddBulkTransactions(jsonData);
+                        alert(`Carga masiva completada: ${jsonData.length} movimientos importados.`);
+                    }
+                } catch (err) {
+                    console.error('Error parsing JSON:', err);
+                    alert('Error procesando el archivo JSON.');
+                } finally {
+                    setUploadingBulk(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+            };
+            fileReader.readAsText(file);
+        } catch (error) {
+            console.error(error);
+            alert('Error al leer el archivo.');
+            setUploadingBulk(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
 
     // Set date filter presets
     const setFilterDate = (range: 'week' | 'fortnight' | 'month') => {
@@ -298,6 +348,28 @@ export default function TransactionsView({
                             </button>
                         )}
                     </div>
+                    {onAddBulkTransactions && (
+                        <>
+                            <input
+                                type="file"
+                                accept=".json"
+                                ref={fileInputRef}
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                            <button
+                                onClick={handleBulkUploadClick}
+                                disabled={uploadingBulk}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition ${uploadingBulk
+                                    ? 'bg-indigo-600/50 text-indigo-300 cursor-not-allowed'
+                                    : 'bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30'
+                                    }`}
+                                title="Carga Masiva (JSON)"
+                            >
+                                <DocumentArrowUpIcon className="w-5 h-5" />
+                            </button>
+                        </>
+                    )}
                     <button
                         onClick={() => setShowFilters(!showFilters)}
                         className={`w-8 h-8 rounded-full flex items-center justify-center transition ${showFilters

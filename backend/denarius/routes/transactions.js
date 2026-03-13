@@ -28,6 +28,96 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// POST /api/transactions/bulk
+router.post('/bulk', async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    console.log('--- START BULK TRANSACTIONS POST ---');
+    if (!Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'Expected an array of transactions' });
+    }
+
+    await connection.beginTransaction();
+
+    let insertedCount = 0;
+
+    for (const txData of req.body) {
+      const { date, amount, type, account_id, bucket_id, source_bucket_id, description, target_amount } = txData;
+      const tx_date = date ? new Date(date) : new Date();
+
+      const finalTargetAmount = (target_amount !== undefined && target_amount !== null) ? target_amount : amount;
+
+      // Special Handling for Bucket Moves
+      if (type === 'bucket_move' && source_bucket_id && bucket_id) {
+        const [buckets] = await connection.query('SELECT id, currency, name FROM buckets WHERE id IN (?, ?)', [source_bucket_id, bucket_id]);
+        const sourceB = buckets.find(b => String(b.id) === String(source_bucket_id));
+        const targetB = buckets.find(b => String(b.id) === String(bucket_id));
+
+        if (sourceB && targetB) {
+          // Outgoing
+          const descriptionOut = description || `Transferencia a ${targetB.name}`;
+          await connection.query(
+            'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
+            [tx_date, amount, 'TRANSFER_OUT', source_bucket_id, descriptionOut]
+          );
+          await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
+
+          // Incoming
+          const descriptionIn = description || `Transferencia desde ${sourceB.name}`;
+          await connection.query(
+            'INSERT INTO transactions (date, amount, type, bucket_id, description) VALUES (?, ?, ?, ?, ?)',
+            [tx_date, finalTargetAmount, 'TRANSFER_IN', bucket_id, descriptionIn]
+          );
+          await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+          insertedCount += 2;
+          continue; // Skip the normal insert
+        }
+      }
+
+      await connection.query(
+        'INSERT INTO transactions (date, amount, type, account_id, bucket_id, source_bucket_id, description, target_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [tx_date, amount, type, account_id, bucket_id, source_bucket_id, description, finalTargetAmount]
+      );
+      insertedCount++;
+
+      const lowerCaseType = type.toLowerCase();
+
+      if (account_id) {
+        if (lowerCaseType === 'income' || lowerCaseType === 'transfer_in') {
+          await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, account_id]);
+        } else if (lowerCaseType === 'expense' || lowerCaseType === 'transfer_out') {
+          await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, account_id]);
+        }
+      }
+
+      if (bucket_id) {
+        if (lowerCaseType === 'income' || lowerCaseType === 'transfer_in') {
+          await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+        } else if (lowerCaseType === 'expense' || lowerCaseType === 'transfer_out') {
+          await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+        }
+      }
+
+      if (source_bucket_id && lowerCaseType === 'bucket_move') {
+        await connection.query('UPDATE buckets SET balance = balance - ? WHERE id = ?', [amount, source_bucket_id]);
+        if (bucket_id) {
+          await connection.query('UPDATE buckets SET balance = balance + ? WHERE id = ?', [finalTargetAmount, bucket_id]);
+        }
+      }
+    }
+
+    await connection.commit();
+    console.log(`Bulk transactions committed successfully: ${insertedCount} transactions`);
+    res.status(201).json({ message: `Carga masiva completada: ${insertedCount} movimientos importados`, count: insertedCount });
+  } catch (error) {
+    await connection.rollback();
+    console.error('BULK TRANSACTION ERROR - ROLLBACK EXECUTED:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+    console.log('--- END BULK TRANSACTIONS POST ---');
+  }
+});
 
 // POST /api/transactions
 router.post('/', async (req, res) => {

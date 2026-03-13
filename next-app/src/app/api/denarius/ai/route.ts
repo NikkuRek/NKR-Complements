@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Esta variable NO debe tener NEXT_PUBLIC_, para que solo viva en el servidor
-const API_KEY = process.env.GEMINI_API_KEY;
+const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
     if (!API_KEY) {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
         const { prompt, history, message } = await req.json();
 
         const genAI = new GoogleGenerativeAI(API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         let textResponse = '';
 

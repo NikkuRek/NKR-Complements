@@ -8,7 +8,6 @@ interface StatisticsViewProps {
     transactions: Transaction[];
     accounts: Account[];
     buckets: Bucket[];
-    apiKey: string;
 }
 
 interface ChatMessage {
@@ -16,7 +15,7 @@ interface ChatMessage {
     text: string;
 }
 
-export default function StatisticsView({ transactions, accounts, buckets, apiKey }: StatisticsViewProps) {
+export default function StatisticsView({ transactions, accounts, buckets }: StatisticsViewProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
