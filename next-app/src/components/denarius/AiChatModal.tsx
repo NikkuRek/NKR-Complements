@@ -105,7 +105,8 @@ Instrucciones:
 ]
 `;
 
-        const response = await fetch('/api/gemini', {
+        const apiUrl = process.env.NEXT_PUBLIC_DENARIUS_API || 'http://localhost:3001/api';
+        const response = await fetch(`${apiUrl}/ai`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ systemPrompt, userInput })

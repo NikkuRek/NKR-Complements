@@ -14,6 +14,7 @@ const transactionsRoutes = require('./routes/transactions');
 const syncRoutes = require('./routes/sync');
 const wishlistRoutes = require('./routes/wishlist');
 const migrationsRoutes = require('./routes/migrations');
+const aiRoutes = require('./routes/ai');
 
 // HTTP request logger
 app.use(morgan('dev'));
@@ -38,6 +39,7 @@ app.use('/api/buckets', bucketsRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/api', migrationsRoutes);
 
 app.get('/', (req, res) => {
