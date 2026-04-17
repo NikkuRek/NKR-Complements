@@ -24,8 +24,20 @@ export default function AiChatModal({ isOpen, onClose, accounts, buckets, onAddT
     const [isRecording, setIsRecording] = useState(false);
     const [loading, setLoading] = useState(false);
     const [textInput, setTextInput] = useState('');
+    const [history, setHistory] = useState<{ userInput: string; jsonOutput: string }[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
+
+    useEffect(() => {
+        const savedHistory = localStorage.getItem('ai_chat_history');
+        if (savedHistory) {
+            try {
+                setHistory(JSON.parse(savedHistory));
+            } catch (e) {
+                console.error('Error parsing AI history', e);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -109,7 +121,7 @@ Instrucciones:
         const response = await fetch(`${apiUrl}/ai`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemPrompt, userInput })
+            body: JSON.stringify({ systemPrompt, userInput, userHistory: history })
         });
 
         if (!response.ok) {
@@ -140,6 +152,13 @@ Instrucciones:
                 await onAddTransaction(tx.amount, tx.type, tx.accountId, tx.bucketId || null, tx.description || 'Por voz');
                 processedCount++;
             }
+        }
+
+        if (processedCount > 0) {
+            const newHistoryItem = { userInput, jsonOutput: JSON.stringify(txsToProcess) };
+            const newHistory = [...history, newHistoryItem].slice(-20);
+            setHistory(newHistory);
+            localStorage.setItem('ai_chat_history', JSON.stringify(newHistory));
         }
 
         return `Se registraron ${processedCount} transacción(es) exitosamente.`;
