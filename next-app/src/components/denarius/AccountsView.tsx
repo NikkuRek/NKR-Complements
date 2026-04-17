@@ -11,6 +11,7 @@ import DatePicker from '@/components/ui/DatePicker';
 import AssetAccountItem from '@/components/denarius/AssetAccountItem';
 import AccountModal from '@/components/ui/AccountModal';
 import TransactionModal from './TransactionModal';
+import AiChatModal from './AiChatModal';
 import SettleModal from './SettleModal';
 import ExchangeRateWidget from './ExchangeRateWidget';
 import { CheckIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
@@ -155,6 +156,7 @@ export default function AccountsView({
     const [transactionModalOpen, setTransactionModalOpen] = useState(false);
     const [transactionType, setTransactionType] = useState<'INCOME' | 'EXPENSE'>('INCOME');
     const [transferModalOpen, setTransferModalOpen] = useState(false);
+    const [aiChatOpen, setAiChatOpen] = useState(false);
     const [transferSource, setTransferSource] = useState('');
     const [transferTarget, setTransferTarget] = useState('');
     const [transferAmount, setTransferAmount] = useState('');
@@ -381,6 +383,11 @@ export default function AccountsView({
     const handleSaveTransaction = async (amount: number, accountId: number, bucketId: number | null, description: string, targetAmount?: number, date?: string) => {
         if (!onAddTransaction) return;
         await onAddTransaction(amount, transactionType, accountId, bucketId, description, targetAmount, date);
+    };
+
+    const handleAiAddTransaction = async (amount: number, type: 'INCOME' | 'EXPENSE', accountId: number | null, bucketId: number | null, description: string) => {
+        if (!onAddTransaction) return;
+        await onAddTransaction(amount, type, accountId, bucketId, description);
     };
 
     // Calculate default rate when transfer details change
@@ -742,7 +749,7 @@ export default function AccountsView({
             </section>
 
             {/* ACCIONES RÁPIDAS (Icon Row) */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
                 <Button
                     variant="success"
                     className="!rounded-2xl !p-4 flex-col items-center justify-center gap-2 h-auto"
@@ -780,6 +787,17 @@ export default function AccountsView({
                         <i className="fas fa-exchange-alt text-white text-sm"></i>
                     </div>
                     <span className="text-[10px] font-medium text-white/90">Mover</span>
+                </Button>
+
+                <Button
+                    variant="primary"
+                    className="!rounded-2xl !p-4 flex-col items-center justify-center gap-2 h-auto bg-slate-800/50 hover:bg-slate-700/50 border border-fuchsia-500/30"
+                    onClick={() => setAiChatOpen(true)}
+                >
+                    <div className="w-10 h-10 rounded-full bg-fuchsia-500/20 flex items-center justify-center group-hover:bg-fuchsia-500/30 transition shadow-[0_0_10px_rgba(192,38,211,0.3)]">
+                        <i className="fas fa-robot text-fuchsia-400 text-sm"></i>
+                    </div>
+                    <span className="text-[10px] font-medium text-white/90">Asistente</span>
                 </Button>
             </div>
 
@@ -1634,6 +1652,14 @@ export default function AccountsView({
                 receivableAccounts={receivableAccounts}
                 onSettle={handleSettle}
                 rates={rates}
+            />
+
+            <AiChatModal
+                isOpen={aiChatOpen}
+                onClose={() => setAiChatOpen(false)}
+                accounts={accounts}
+                buckets={buckets}
+                onAddTransaction={handleAiAddTransaction}
             />
         </div >
     );
