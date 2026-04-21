@@ -111,12 +111,12 @@ export default function DenariusPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-800 text-slate-100 flex flex-col">
+        <div className="min-h-screen text-slate-100 flex flex-col bg-transparent">
             {/* ... Header ... */}
             <Header
                 title={
                     <span>
-                        Dena<span className="text-blue-500">rius</span>
+                        Dena<span className="text-fuchsia-400 drop-shadow-[0_0_10px_rgba(192,38,211,0.5)] font-bold">rius</span>
                     </span>
                 }
                 subtitle=""
@@ -198,8 +198,8 @@ export default function DenariusPage() {
                 </div>
             </main>
             {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-700 z-20">
-                <div className="max-w-3xl mx-auto grid grid-cols-6 gap-1 p-2">
+            <nav className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl border-t border-white/10 z-20">
+                <div className="max-w-3xl mx-auto grid grid-cols-6 gap-2 p-3 pb-safe">
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = currentView === item.id;
@@ -207,9 +207,9 @@ export default function DenariusPage() {
                             <button
                                 key={item.id}
                                 onClick={() => setCurrentView(item.id)}
-                                className={`flex flex-col items-center justify-center py-3 px-3 rounded-xl transition ${isActive
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-2xl transition duration-300 ${isActive
+                                    ? 'bg-fuchsia-500/10 text-fuchsia-300 shadow-[0_0_15px_rgba(192,38,211,0.15)] border border-fuchsia-500/20'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                             >
                                 <Icon className="w-6 h-6" />

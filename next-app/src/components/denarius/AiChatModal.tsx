@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Account, Bucket } from '@/types/denarius';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition } from "@capacitor-community/speech-recognition";
 
 interface AiChatModalProps {
     isOpen: boolean;
@@ -46,9 +48,22 @@ export default function AiChatModal({ isOpen, onClose, accounts, buckets, onAddT
     }, [messages]);
 
     useEffect(() => {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-            recognitionRef.current = new SpeechRecognition();
+        // Configuracion para App Móvil (Native)
+        let nativeListener: any = null;
+        if (Capacitor.isNativePlatform()) {
+            SpeechRecognition.requestPermissions();
+            SpeechRecognition.addListener('partialResults', (data: any) => {
+                if (data.matches && data.matches.length > 0) {
+                    handleUserMessage(data.matches[0]);
+                }
+                setIsRecording(false);
+            }).then(l => nativeListener = l);
+        }
+
+        // Configuración para Web View Normal
+        if (!Capacitor.isNativePlatform() && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRec();
             recognitionRef.current.continuous = false;
             recognitionRef.current.interimResults = false;
             recognitionRef.current.lang = 'es-ES';
@@ -76,7 +91,10 @@ export default function AiChatModal({ isOpen, onClose, accounts, buckets, onAddT
         }
         return () => {
              if (recognitionRef.current) {
-                 recognitionRef.current.stop();
+                 try { recognitionRef.current.stop(); } catch(e){}
+             }
+             if (nativeListener) {
+                 nativeListener.remove();
              }
         }
     }, [accounts, buckets]); // re-bind if context updates
@@ -164,18 +182,43 @@ Instrucciones:
         return `Se registraron ${processedCount} transacción(es) exitosamente.`;
     };
 
-    const startRecording = () => {
+    const startRecording = async () => {
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const { speechRecognition } = await SpeechRecognition.requestPermissions();
+                if (speechRecognition !== 'granted') {
+                    alert('Por favor, permite el acceso al micrófono en la configuración de Android.');
+                    return;
+                }
+                setIsRecording(true);
+                await SpeechRecognition.start({
+                    language: 'es-ES',
+                    maxResults: 1,
+                    prompt: 'Habla ahora (Ej: Gasto de 10 dólares en comida)...',
+                    partialResults: false,
+                    popup: true,
+                });
+            } catch (err) {
+                console.error(err);
+                setIsRecording(false);
+                alert('No se pudo iniciar el micrófono del sistema.');
+            }
+            return;
+        }
+
         if (!recognitionRef.current) {
             alert('Tu navegador no soporta reconocimiento de voz.');
             return;
         }
         setIsRecording(true);
-        recognitionRef.current.start();
+        try { recognitionRef.current.start(); } catch(e){}
     };
 
     const stopRecording = () => {
+        if (Capacitor.isNativePlatform()) return;
+        
         if (recognitionRef.current) {
-            recognitionRef.current.stop();
+            try { recognitionRef.current.stop(); } catch(e){}
         }
         setIsRecording(false);
     };
@@ -247,18 +290,34 @@ Instrucciones:
                     </div>
 
                      <button 
-                        onMouseDown={startRecording} 
-                        onMouseUp={stopRecording} 
-                        onTouchStart={startRecording} 
-                        onTouchEnd={stopRecording}
-                        className={`w-full py-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${isRecording ? 'bg-fuchsia-600/20 shadow-[0_0_15px_rgba(192,38,211,0.5)] border-fuchsia-500' : 'bg-slate-800 hover:bg-slate-700 border-transparent'} border shadow-lg`}
+                        onMouseDown={Capacitor.isNativePlatform() ? undefined : startRecording} 
+                        onMouseUp={Capacitor.isNativePlatform() ? undefined : stopRecording} 
+                        onTouchStart={Capacitor.isNativePlatform() ? undefined : startRecording} 
+                        onTouchEnd={Capacitor.isNativePlatform() ? undefined : stopRecording}
+                        onClick={Capacitor.isNativePlatform() ? startRecording : undefined}
+                        className={`group relative w-full overflow-hidden transition-all duration-500 ease-out py-4 rounded-2xl flex flex-col items-center justify-center gap-2 border hover:scale-[1.02] active:scale-[0.98]
+                            ${isRecording 
+                                ? 'bg-gradient-to-r from-fuchsia-600/30 via-indigo-600/30 to-purple-600/30 border-fuchsia-500 shadow-[0_0_30px_rgba(192,38,211,0.5)]' 
+                                : 'bg-slate-900/60 hover:bg-slate-800/80 border-slate-700 hover:border-fuchsia-500/50 shadow-xl backdrop-blur-md'
+                            }
+                        `}
                     >
-                        <span className="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-5 h-5 ${isRecording ? 'text-fuchsia-400 animate-pulse' : 'text-slate-400'}`}><path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" /><path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" /></svg>
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-300">
-                                {isRecording ? 'Escuchando...' : 'Mantén pulsado para hablar'}
+                        {/* Animated background glow when recording */}
+                        {isRecording && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/20 via-indigo-500/20 to-purple-500/20 animate-pulse blur-xl"></div>
+                        )}
+
+                        <div className="relative z-10 flex flex-col items-center justify-center gap-2">
+                            <div className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 ${isRecording ? 'bg-fuchsia-500/20 shadow-[0_0_20px_rgba(192,38,211,0.6)] scale-110' : 'bg-white/5 group-hover:bg-fuchsia-500/10'}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-6 h-6 transition-colors duration-300 ${isRecording ? 'text-fuchsia-400 animate-bounce' : 'text-slate-400 group-hover:text-fuchsia-300'}`}>
+                                    <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
+                                    <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
+                                </svg>
+                            </div>
+                            <span className={`text-[10px] uppercase font-bold tracking-widest transition-colors duration-300 ${isRecording ? 'text-fuchsia-300 animate-pulse' : 'text-slate-400 group-hover:text-slate-300'}`}>
+                                {isRecording ? 'Escuchando Instrucciones...' : (Capacitor.isNativePlatform() ? 'Toca para hablar' : 'Mantén pulsado para hablar')}
                             </span>
-                        </span>
+                        </div>
                     </button>
                 </div>
             </div>

@@ -39,7 +39,7 @@ export default function Header({
     };
 
     return (
-        <header className="bg-slate-900/90 backdrop-blur-md shadow-sm p-4 z-50 sticky top-0">
+        <header className="bg-black/40 backdrop-blur-xl shadow-md p-4 z-50 sticky top-0 border-b border-white/10">
             <div className="max-w-3xl mx-auto relative flex justify-between items-center h-8">
                 {/* Left Side */}
                 <div className="flex items-center gap-3 z-10">
@@ -58,7 +58,7 @@ export default function Header({
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                     <h1 className="text-xl font-bold text-white flex items-center gap-1 whitespace-nowrap">
                         {title}
-                        {subtitle && <span className="text-indigo-300">{subtitle}</span>}
+                        {subtitle && <span className="text-slate-400 font-light">{subtitle}</span>}
                     </h1>
                 </div>
 
