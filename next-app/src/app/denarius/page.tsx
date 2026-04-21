@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDenarius } from '@/hooks/useDenarius';
-import Header from '@/components/layout/Header';
+// import Header from '@/components/layout/Header';
 import AccountsView from '@/components/denarius/AccountsView';
 import BudgetsView from '@/components/denarius/BudgetsView';
 import TransactionsView from '@/components/denarius/TransactionsView';
@@ -94,7 +94,6 @@ export default function DenariusPage() {
     useEffect(() => {
         refreshRates(true); // Silent mode: don't show alerts on auto-fetch
         denarius.fetchData(); // Fetch initial data for denarius hook
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Empty dependency array means this runs once on mount
 
     const navItems = [
@@ -112,7 +111,7 @@ export default function DenariusPage() {
 
     return (
         <div className="min-h-screen text-slate-100 flex flex-col bg-transparent">
-            {/* ... Header ... */}
+            {/* Header (Oculto a petición) 
             <Header
                 title={
                     <span>
@@ -124,8 +123,9 @@ export default function DenariusPage() {
                 showRefresh={true}
                 onRefresh={denarius.fetchData}
             />
+            */}
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar p-6 pb-28">
+            <main className="flex-1 overflow-y-auto hide-scrollbar p-6 pb-32">
                 <div className="max-w-3xl mx-auto">
                     {denarius.loading ? (
                         <div className="flex items-center justify-center py-20">
@@ -197,27 +197,29 @@ export default function DenariusPage() {
                     )}
                 </div>
             </main>
-            {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl border-t border-white/10 z-20">
-                <div className="max-w-3xl mx-auto grid grid-cols-6 gap-2 p-3 pb-safe">
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = currentView === item.id;
-                        return (
-                            <button
-                                key={item.id}
-                                onClick={() => setCurrentView(item.id)}
-                                className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-2xl transition duration-300 ${isActive
-                                    ? 'bg-fuchsia-500/10 text-fuchsia-300 shadow-[0_0_15px_rgba(192,38,211,0.15)] border border-fuchsia-500/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                    }`}
-                            >
-                                <Icon className="w-6 h-6" />
-                            </button>
-                        );
-                    })}
-                </div>
-            </nav>
+            {/* Bottom Navigation Flotante */}
+            <div className="fixed bottom-6 left-0 right-0 px-6 z-20 flex justify-center pointer-events-none">
+                <nav className="w-full max-w-md bg-slate-900/80 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 rounded-[2rem] pointer-events-auto">
+                    <div className="grid grid-cols-6 gap-2 p-2">
+                        {navItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = currentView === item.id;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setCurrentView(item.id)}
+                                    className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-2xl transition duration-300 ${isActive
+                                        ? 'bg-fuchsia-500/15 text-fuchsia-300 shadow-[0_0_15px_rgba(192,38,211,0.15)] border border-fuchsia-500/20 shadow-inner'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                >
+                                    <Icon className="w-6 h-6" />
+                                </button>
+                            );
+                        })}
+                    </div>
+                </nav>
+            </div>
         </div>
     );
 }

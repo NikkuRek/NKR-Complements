@@ -5,17 +5,17 @@
 :root {
   font-size: 92.5%;
   /* Reduces base size to ~14.8px */
-  --background: #000000;
+  --background: #020617;
   --foreground: #f8fafc;
-  --primary: #52525b;
-  --primary-dark: #3f3f46;
-  --glass-bg: rgba(10, 10, 10, 0.5);
+  --primary: #334155;
+  --primary-dark: #1e293b;
+  --glass-bg: rgba(15, 23, 42, 0.5);
   --glass-border: rgba(255, 255, 255, 0.05);
 }
 
 body {
   color: var(--foreground);
-  background: radial-gradient(circle at 50% -20%, rgba(192, 38, 211, 0.06) 0%, #141414 30%, #000000 80%);
+  background: radial-gradient(circle at 50% -20%, rgba(192, 38, 211, 0.1) 0%, #0f172a 40%, #020617 100%);
   font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
   background-attachment: fixed;
@@ -23,15 +23,15 @@ body {
 
 /* Premium Glassmorphism */
 .glass-panel {
-  background: rgba(15, 15, 15, 0.45);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
 .glass-panel-light {
-  background: rgba(25, 25, 25, 0.4);
+  background: rgba(30, 41, 59, 0.4);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -39,7 +39,7 @@ body {
 
 /* Premium Input Styling */
 .input-modern {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(2, 6, 23, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -48,7 +48,7 @@ body {
 
 .input-modern:hover {
   border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(20, 20, 20, 0.5);
+  background: rgba(15, 23, 42, 0.6);
 }
 
 .input-modern:focus {
